@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>TypeScript Web Component</title>
+    <title>Web Component</title>
 </head>
 <body>
 <h1>Hello World.</h1>
 
-<script src="/app/index.js"></script>
-<script>
+<script type="module">
+    import ScStorage, { StorageType } from './app/index.js';
+
     const scStorage = new ScStorage()
     scStorage.write("test", "value", {expires: new Date(new Date().getTime()+1000000)}, StorageType.COOKIE)
     console.log(scStorage.read("test", StorageType.COOKIE))

@@ -1,17 +1,31 @@
-// eslint-disable-next-line no-unused-vars
-class ScStorage {
-  _storageType = StorageType.LOCAL_STORAGE
+/**
+ * @enum {StorageType}
+ */
+export const StorageType = {
+  COOKIE: 'Cookie',
+  LOCAL_STORAGE: 'LocalStorage',
+  SESSION_STORAGE: 'SessionStorage'
+}
 
+/**
+ * Define the default configuration for the ScStorage class
+ */
+const DEFAULT = {
+  STORAGE_TYPE: StorageType.LOCAL_STORAGE,
+  LIFETIME: 1
+}
+
+export default class ScStorage {
   /**
-   * @param {StorageType=} [storageType]
+   * @param {Object} config
    */
-  constructor (storageType) {
-    if (typeof storageType === 'undefined') { storageType = StorageType.LOCAL_STORAGE }
-
-    this._storageType = storageType
+  constructor (config) {
+    this._settings = Object.assign({}, DEFAULT, config)
   }
 
   /**
+   * Method to read data from a specified type of web storage.
+   *
    * @param {String} key
    * @param {StorageType=} [storageType]
    * @param {Object=} [options]
@@ -19,7 +33,7 @@ class ScStorage {
    */
   read (key, storageType) {
     if (typeof window === 'undefined') { return null }
-    if (typeof storageType === 'undefined') { storageType = this._storageType }
+    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
     key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
       .replace(/[()]/g, escape)
 
@@ -36,6 +50,8 @@ class ScStorage {
   }
 
   /**
+   * Method to write data into a specified type of web storage.
+   *
    * @param {String} key
    * @param {*} data
    * @param {Object=} [options]
@@ -52,7 +68,7 @@ class ScStorage {
    */
   write (key, data, options, storageType) {
     if (typeof window === 'undefined') { return false }
-    if (typeof storageType === 'undefined') { storageType = this._storageType }
+    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
     if (typeof options === 'undefined') { options = {} }
     key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
       .replace(/[()]/g, escape)
@@ -70,13 +86,15 @@ class ScStorage {
   }
 
   /**
+   * Method to check if a key exists in a specified type of web storage.
+   *
    * @param {String} key
    * @param {StorageType=} [storageType]
    * @returns {Boolean}
    */
   has (key, storageType) {
     if (typeof window === 'undefined') { return false }
-    if (typeof storageType === 'undefined') { storageType = this._storageType }
+    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
     key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
       .replace(/[()]/g, escape)
 
@@ -93,13 +111,15 @@ class ScStorage {
   }
 
   /**
+   * Method to delete a key from a specified type of web storage.
+   *
    * @param {String} key
    * @param {StorageType=} [storageType]
    * @returns {Boolean}
    */
   delete (key, storageType) {
     if (typeof window === 'undefined') { return false }
-    if (typeof storageType === 'undefined') { storageType = this._storageType }
+    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
     key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
       .replace(/[()]/g, escape)
 
@@ -120,12 +140,18 @@ class ScStorage {
    * @param {String} key
    * @param {*} data
    * @param {Date | Number | Null} expires
+   * @returns {Boolean}
    */
   _writeLocalStorage (key, data, expires) {
-    if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires * 864e5) }
+    if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires) }
 
     window.localStorage.setItem(key,
-      JSON.stringify({ data, expires: expires !== null ? expires.getTime() : null }))
+      JSON.stringify({
+        data,
+        expires: expires !== null
+          ? expires.getTime()
+          : new Date(Date.now() + this._settings.LIFETIME)
+      }))
     return true
   }
 
@@ -134,12 +160,18 @@ class ScStorage {
    * @param {String} key
    * @param {*} data
    * @param {Date | Number | Null } expires
+   * @returns {Boolean}
    */
   _writeSessionStorage (key, data, expires) {
-    if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires * 864e5) }
+    if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires) }
 
     window.sessionStorage.setItem(key,
-      JSON.stringify({ data, expires: expires !== null ? expires.getTime() : null }))
+      JSON.stringify({
+        data,
+        expires: expires !== null
+          ? expires.getTime()
+          : new Date(Date.now() + this._settings.LIFETIME)
+      }))
     return true
   }
 
@@ -156,13 +188,18 @@ class ScStorage {
    * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
    * @param {(Boolean | 'none' | 'lax' | 'strict')=} [options.sameSite] Only relevant if storageType is 'Cookie'.
    * @param {Date=} [options.encode] Only relevant if storageType is 'Cookie'.
+   * @returns {Boolean}
    */
   _writeCookie (key, data, options) {
     if (!('cookie' in document)) { return false }
     if (options.expires && typeof options.expires === 'number') {
-      options.expires = new Date(Date.now() + options.expires * 864e5)
+      options.expires = new Date(Date.now() + options.expires)
     }
-    if (options.expires) { options.expires = options.expires.toUTCString() }
+    if (options.expires) {
+      options.expires = options.expires.toUTCString()
+    } else {
+      options.expires = new Date(Date.now() + this._settings.LIFETIME)
+    }
 
     const stringifiedOptions = this._stringifyOptions(options)
 
@@ -174,6 +211,7 @@ class ScStorage {
   /**
    * @private
    * @param {Object} options
+   * @returns {String}
    */
   _stringifyOptions (options) {
     let stringifiedOptions = ''
@@ -294,13 +332,4 @@ class ScStorage {
     window.sessionStorage.removeItem(key)
     return true
   }
-}
-
-/**
- * @enum {StorageType}
- */
-const StorageType = {
-  COOKIE: 'Cookie',
-  LOCAL_STORAGE: 'LocalStorage',
-  SESSION_STORAGE: 'SessionStorage'
 }
