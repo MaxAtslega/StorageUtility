@@ -9,8 +9,19 @@
 <body>
 <h1>Hello World.</h1>
 
-<script type="module" src="/app/index.js">
-    new ScStorage().write('ewwe', '')
+<script src="/app/index.js"></script>
+<script>
+    const scStorage = new ScStorage()
+    scStorage.write("test", "value", {expires: new Date(new Date().getTime()+1000000)}, StorageType.COOKIE)
+    console.log(scStorage.read("test", StorageType.COOKIE))
+    scStorage.delete("test", StorageType.COOKIE)
+    console.log(scStorage.read("test", StorageType.COOKIE))
+
+    const scStorage1 = new ScStorage(StorageType.LOCAL_STORAGE)
+    scStorage1.write("test", "value", {expires: new Date(new Date().getTime()+1000000)})
+    console.log(scStorage1.read("test"))
+    scStorage1.delete("test")
+    console.log(scStorage1.read("test"))
 </script>
 </body>
 </html>
