@@ -21,6 +21,10 @@ export default class ScStorage {
    */
   constructor (config) {
     this._settings = Object.assign({}, DEFAULT, config)
+
+    this._localStorageUtility = new LocalStorageUtility(this._settings)
+    this._sessionStorageUtility = new SessionStorageUtility(this._settings)
+    this._cookieUtility = new CookieUtility(this._settings)
   }
 
   /**
@@ -39,11 +43,11 @@ export default class ScStorage {
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
-        return this._readLocalStorage(key)
+        return this._localStorageUtility.read(key)
       case StorageType.SESSION_STORAGE:
-        return this._readSessionStorage(key)
+        return this._sessionStorageUtility.read(key)
       case StorageType.COOKIE:
-        return this._readCookie(key)
+        return this._cookieUtility.read(key)
       default:
         return false
     }
@@ -75,11 +79,11 @@ export default class ScStorage {
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
-        return this._writeLocalStorage(key, data, options.expires || null)
+        return this._localStorageUtility.write(key, data, options.expires || null)
       case StorageType.SESSION_STORAGE:
-        return this._writeSessionStorage(key, data, options.expires || null)
+        return this._sessionStorageUtility.write(key, data, options.expires || null)
       case StorageType.COOKIE:
-        return this._writeCookie(key, data, options)
+        return this._cookieUtility.write(key, data, options)
       default:
         return false
     }
@@ -100,11 +104,11 @@ export default class ScStorage {
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
-        return this._hasLocalStorage(key)
+        return this._localStorageUtility.has(key)
       case StorageType.SESSION_STORAGE:
-        return this._hasSessionStorage(key)
+        return this._sessionStorageUtility.has(key)
       case StorageType.COOKIE:
-        return this._hasCookie(key)
+        return this._cookieUtility.has(key)
       default:
         return false
     }
@@ -125,24 +129,33 @@ export default class ScStorage {
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
-        return this._deleteLocalStorage(key)
+        return this._localStorageUtility.delete(key)
       case StorageType.SESSION_STORAGE:
-        return this._deleteSessionStorage(key)
+        return this._sessionStorageUtility.delete(key)
       case StorageType.COOKIE:
-        return this._deleteCookie(key)
+        return this._cookieUtility.delete(key)
       default:
         return false
     }
   }
+}
+
+class LocalStorageUtility {
+  /**
+   * @param {Object} config
+   */
+  constructor (config) {
+    this._settings = Object.assign({}, DEFAULT, config)
+  }
 
   /**
-   * @private
+   * Write a value to local storage.
    * @param {String} key
    * @param {*} data
    * @param {Date | Number | Null} expires
    * @returns {Boolean}
    */
-  _writeLocalStorage (key, data, expires) {
+  write (key, data, expires) {
     if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires) }
 
     window.localStorage.setItem(key,
@@ -156,13 +169,66 @@ export default class ScStorage {
   }
 
   /**
-   * @private
+   * Read a value from local storage.
+   * @param {String} key
+   */
+  read (key) {
+    const item = window.localStorage.getItem(key)
+    if (!item) { return { data: null } }
+
+    let obj = null
+    try {
+      obj = JSON.parse(item)
+    } catch (e) {
+      obj = { data: item }
+    }
+
+    if (!('expires' in obj) || !obj.expires) { return obj }
+
+    if (new Date().getTime() > obj.expires) {
+      this.delete(key)
+      return { data: null }
+    }
+
+    return obj
+  }
+
+  /**
+   * Check if a key exists in local storage.
+   * @param {String} key
+   * @returns {boolean}
+   */
+  has (key) {
+    return this.read(key) !== null
+  }
+
+  /**
+   * Delete a value from local storage.
+   * @param {String} key
+   * @returns {boolean}
+   */
+  delete (key) {
+    window.localStorage.removeItem(key)
+    return true
+  }
+}
+
+class SessionStorageUtility {
+  /**
+   * @param {Object} config
+   */
+  constructor (config) {
+    this._settings = Object.assign({}, DEFAULT, config)
+  }
+
+  /**
+   * Write a value to session storage.
    * @param {String} key
    * @param {*} data
    * @param {Date | Number | Null } expires
    * @returns {Boolean}
    */
-  _writeSessionStorage (key, data, expires) {
+  write (key, data, expires) {
     if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires) }
 
     window.sessionStorage.setItem(key,
@@ -176,7 +242,60 @@ export default class ScStorage {
   }
 
   /**
-   * @private
+   * Read a value from session storage.
+   * @param {String} key
+   */
+  read (key) {
+    const item = window.sessionStorage.getItem(key)
+    if (!item) { return { data: null } }
+
+    let obj = null
+    try {
+      obj = JSON.parse(item)
+    } catch (e) {
+      obj = { data: item }
+    }
+
+    if (!('expires' in obj) || !obj.expires) { return obj }
+
+    if (new Date().getTime() > obj.expires) {
+      this.delete(key)
+      return { data: null }
+    }
+
+    return obj
+  }
+
+  /**
+   * Check if a key exists in session storage.
+   * @param {String} key
+   * @returns {boolean}
+   */
+  has (key) {
+    return this.read(key) !== null
+  }
+
+  /**
+   * Delete a value from session storage.
+   * @param {String} key
+   * @returns {boolean}
+   */
+  delete (key) {
+    window.sessionStorage.removeItem(key)
+    return true
+  }
+}
+
+class CookieUtility {
+  /**
+   * @param {Object} config
+   */
+  constructor (config) {
+    this._settings = Object.assign({}, DEFAULT, config)
+  }
+
+  /**
+   * Write a value to cookies.
    * @param {String} key
    * @param {*} data
    * @param {{expires: number}} options
@@ -190,7 +309,7 @@ export default class ScStorage {
    * @param {Date=} [options.encode] Only relevant if storageType is 'Cookie'.
    * @returns {Boolean}
    */
-  _writeCookie (key, data, options) {
+  write (key, data, options) {
     if (!('cookie' in document)) { return false }
     if (options.expires && typeof options.expires === 'number') {
       options.expires = new Date(Date.now() + options.expires)
@@ -201,10 +320,10 @@ export default class ScStorage {
       options.expires = new Date(Date.now() + this._settings.LIFETIME)
     }
 
-    const stringifiedOptions = this._stringifyOptions(options)
+    const stringifiesOptions = this._stringifyOptions(options)
 
     document.cookie = key + '=' + encodeURIComponent(data)
-      .replace(/%(2[346BF]|3[AC-F]|40|5[BDE]|60|7[BCD])/g, decodeURIComponent) + stringifiedOptions
+      .replace(/%(2[346BF]|3[AC-F]|40|5[BDE]|60|7[BCD])/g, decodeURIComponent) + stringifiesOptions
     return true
   }
 
@@ -228,108 +347,30 @@ export default class ScStorage {
   }
 
   /**
-   * @private
+   * Read a value from cookies.
    * @param {String} key
    */
-  _readLocalStorage (key) {
-    const item = window.localStorage.getItem(key)
-    if (!item) { return null }
-
-    let obj = null
-    try {
-      obj = JSON.parse(item)
-    } catch (e) {
-      obj = { data: item }
-    }
-
-    if (!('expires' in obj) || !obj.expires) { return obj }
-
-    if (new Date().getTime() > obj.expires) {
-      this.delete(key, StorageType.LOCAL_STORAGE)
-      return null
-    }
-
-    return obj
-  }
-
-  /**
-   * @private
-   * @param {String} key
-   */
-  _readSessionStorage (key) {
-    const item = window.sessionStorage.getItem(key)
-    if (!item) { return null }
-
-    let obj = null
-    try {
-      obj = JSON.parse(item)
-    } catch (e) {
-      obj = { data: item }
-    }
-
-    if (!('expires' in obj) || !obj.expires) { return obj }
-
-    if (new Date().getTime() > obj.expires) {
-      this.delete(key, StorageType.SESSION_STORAGE)
-      return null
-    }
-
-    return obj
-  }
-
-  /**
-   * @private
-   * @param {String} key
-   */
-  _readCookie (key) {
-    if (!('cookie' in document)) { return null }
+  read (key) {
+    if (!('cookie' in document)) { return { data: null } }
     const cookie = document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)')?.pop() || null
     return { data: (cookie ? decodeURIComponent(cookie) : null) }
   }
 
   /**
-   * @private
+   * Check if a key exists in cookies.
    * @param {String} key
+   * @returns {boolean}
    */
-  _hasCookie (key) {
+  has (key) {
     return (new RegExp('(?:^|;\\s*)' + encodeURIComponent(key).replace(/[-.+*]/g, '\\$&') + '\\s*\\=')).test(document.cookie)
   }
 
   /**
-   * @private
+   * Delete a value from cookies.
    * @param {String} key
+   * @returns {boolean}
    */
-  _hasLocalStorage (key) {
-    return this._readLocalStorage(key) !== null
-  }
-
-  /**
-   * @private
-   * @param {String} key
-   */
-  _hasSessionStorage (key) {
-    return this._readSessionStorage(key) !== null
-  }
-
-  _deleteCookie (key) {
-    return this._writeCookie(key, '', { expires: -1 })
-  }
-
-  /**
-   * @private
-   * @param {String} key
-   */
-  _deleteLocalStorage (key) {
-    window.localStorage.removeItem(key)
-    return true
-  }
-
-  /**
-   * @private
-   * @param {String} key
-   */
-  _deleteSessionStorage (key) {
-    window.sessionStorage.removeItem(key)
-    return true
+  delete (key) {
+    return this.write(key, '', { expires: -1 })
   }
 }
