@@ -12,7 +12,22 @@ export const StorageType = {
  */
 const DEFAULT = {
   STORAGE_TYPE: StorageType.LOCAL_STORAGE,
-  LIFETIME: 1
+  LIFETIME: 1000000
+}
+
+/**
+ * Method to test the key whether it matches the key requirements or not
+ */
+function testKeyValidCharacters (key) {
+  const regex = /^[a-zA-Z0-9._-]+$/
+  return regex.test(key)
+}
+
+class InvalidKeyException extends Error {
+  constructor () {
+    super('Please provide a valid key')
+    this.name = this.constructor.name
+  }
 }
 
 export default class ScStorage {
@@ -31,15 +46,13 @@ export default class ScStorage {
    * Method to read data from a specified type of web storage.
    *
    * @param {String} key
-   * @param {StorageType=} [storageType]
-   * @param {Object=} [options]
+   * @param {StorageType|null=} [storageType]
    * @returns {Object}
    */
-  read (key, storageType) {
+  read (key, storageType = null) {
+    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
     if (typeof window === 'undefined') { return null }
-    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
-    key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
-      .replace(/[()]/g, escape)
+    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
@@ -49,7 +62,7 @@ export default class ScStorage {
       case StorageType.COOKIE:
         return this._cookieUtility.read(key)
       default:
-        return false
+        return null
     }
   }
 
@@ -66,15 +79,14 @@ export default class ScStorage {
    * @param {Boolean=} [options.secure] Only relevant if storageType is 'Cookie'.
    * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
    * @param {Boolean | 'none' | 'lax' | 'strict'} [options.sameSite] Only relevant if storageType is 'Cookie'.
-   * @param {StorageType=} [storageType]
+   * @param {StorageType|null=} [storageType]
    * @returns {boolean}
    */
-  write (key, data, options, storageType) {
+  write (key, data, options, storageType = null) {
+    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
     if (typeof window === 'undefined') { return false }
-    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
+    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
     if (typeof options === 'undefined') { options = {} }
-    key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
-      .replace(/[()]/g, escape)
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
@@ -92,14 +104,13 @@ export default class ScStorage {
    * Method to check if a key exists in a specified type of web storage.
    *
    * @param {String} key
-   * @param {StorageType=} [storageType]
+   * @param {StorageType|null=} [storageType]
    * @returns {Boolean}
    */
-  has (key, storageType) {
+  has (key, storageType = null) {
+    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
     if (typeof window === 'undefined') { return false }
-    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
-    key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
-      .replace(/[()]/g, escape)
+    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
@@ -117,14 +128,13 @@ export default class ScStorage {
    * Method to delete a key from a specified type of web storage.
    *
    * @param {String} key
-   * @param {StorageType=} [storageType]
+   * @param {StorageType|null=} [storageType]
    * @returns {Boolean}
    */
-  delete (key, storageType) {
+  delete (key, storageType = null) {
+    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
     if (typeof window === 'undefined') { return false }
-    if (typeof storageType === 'undefined') { storageType = this._settings.STORAGE_TYPE }
-    key = encodeURIComponent(key).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent)
-      .replace(/[()]/g, escape)
+    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
 
     switch (storageType) {
       case StorageType.LOCAL_STORAGE:
@@ -298,7 +308,7 @@ class CookieUtility {
    * @param {String} key
    * @param {*} data
    * @param {{expires: number}} options
-   * @param {Date=} [options.expires]
+   * @param {Date|String=} [options.expires]
    * @param {String=} [options.path] Only relevant if storageType is 'Cookie'.
    * @param {Number=} [options.maxAge] Only relevant if storageType is 'Cookie'.
    * @param {String=} [options.domain] Only relevant if storageType is 'Cookie'.
@@ -314,7 +324,7 @@ class CookieUtility {
     if (options.expires && typeof options.expires === 'number') {
       options.expires = new Date(Date.now() + options.expires)
     }
-    if (options.expires) {
+    if (options.expires && typeof options.expires !== 'string') {
       options.expires = options.expires.toUTCString()
     } else {
       options.expires = new Date(Date.now() + this._settings.LIFETIME)
