@@ -12,22 +12,25 @@ export const StorageType = {
  */
 const DEFAULT = {
   STORAGE_TYPE: StorageType.LOCAL_STORAGE,
-  LIFETIME: 1000000
+  LIFETIME: 86400000
 }
 
 /**
  * Method to test the key whether it matches the key requirements or not
  */
-function testKeyValidCharacters (key) {
+function isKeyValid (key) {
   const regex = /^[a-zA-Z0-9._-]+$/
   return regex.test(key)
 }
 
+function matchKeyNotValid (key) {
+  const regex = /[^a-zA-Z0-9._-]+/g
+  return key.match(regex)
+}
+
 class InvalidKeyException extends Error {
-  // @todo wrong key as argument/property -> render in the error message
-  // nice to have: the wrong key mentioned
-  constructor () {
-    super('Please provide a valid key')
+  constructor (key) {
+    super('The key "' + key + '" is invalid. Please remove the following characters: ' + matchKeyNotValid(key).join(','))
     this.name = this.constructor.name
   }
 }
@@ -36,9 +39,9 @@ export default class ScStorage {
   /**
    * @param {Object} config
    */
-  constructor (config) {
-
+  constructor (config = {}) {
     this._settings = Object.assign({}, DEFAULT, config)
+
     // @todo validation of configs -> here + sub classes -> no invalid option -> exception
     this._localStorageUtility = new LocalStorageUtility(this._settings)
     this._sessionStorageUtility = new SessionStorageUtility(this._settings)
@@ -49,33 +52,41 @@ export default class ScStorage {
    * Method to read data from a specified type of web storage.
    *
    * @param {String} key
-   * @param {StorageType|null=} [storageType]
+   * @param {Object=} [options]
+   * @param {StorageType=} [options.storageType]
+   * @param {Boolean=} [options.asObject]
    * @returns {Object}
    */
-  read (key, storageType = null) {
-    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
-    if (typeof window === 'undefined') { return null }
-    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
+  read (key, options = {}) {
+    if (typeof window === 'undefined') {
+      return false
+    }
+    if (!isKeyValid(key)) {
+      throw new InvalidKeyException(key)
+    }
+    if (!options.storageType) {
+      options.storageType = this._settings.STORAGE_TYPE
+    }
 
-    switch (storageType) {
+    switch (options.storageType) {
       case StorageType.LOCAL_STORAGE:
-        return this._localStorageUtility.read(key)
+        return this._localStorageUtility.read(key, options)
       case StorageType.SESSION_STORAGE:
-        return this._sessionStorageUtility.read(key)
+        return this._sessionStorageUtility.read(key, options)
       case StorageType.COOKIE:
-        return this._cookieUtility.read(key)
+        return this._cookieUtility.read(key, options)
       default:
         return null
     }
   }
 
   /**
-   * @todo refactor interface (of all: main + utilities)
    * Method to write data into a specified type of web storage.
    *
    * @param {String} key
    * @param {*} data
    * @param {Object=} [options]
+   * @param {StorageType=} [options.storageType]
    * @param {Date | Number} [options.expires]
    * @param {String=} [options.path] Only relevant if storageType is 'Cookie'.
    * @param {Number=} [options.maxAge] Only relevant if storageType is 'Cookie'.
@@ -83,20 +94,24 @@ export default class ScStorage {
    * @param {Boolean=} [options.secure] Only relevant if storageType is 'Cookie'.
    * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
    * @param {Boolean | 'none' | 'lax' | 'strict'} [options.sameSite] Only relevant if storageType is 'Cookie'.
-   * @param {StorageType|null=} [storageType]
    * @returns {boolean}
    */
-  write (key, data, options, storageType = null) {
-    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
-    if (typeof window === 'undefined') { return false }
-    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
-    if (typeof options === 'undefined') { options = {} }
+  write (key, data, options = {}) {
+    if (typeof window === 'undefined') {
+      return false
+    }
+    if (!isKeyValid(key)) {
+      throw new InvalidKeyException(key)
+    }
+    if (!options.storageType) {
+      options.storageType = this._settings.STORAGE_TYPE
+    }
 
-    switch (storageType) {
+    switch (options.storageType) {
       case StorageType.LOCAL_STORAGE:
-        return this._localStorageUtility.write(key, data, options.expires || null)
+        return this._localStorageUtility.write(key, data, options)
       case StorageType.SESSION_STORAGE:
-        return this._sessionStorageUtility.write(key, data, options.expires || null)
+        return this._sessionStorageUtility.write(key, data, options)
       case StorageType.COOKIE:
         return this._cookieUtility.write(key, data, options)
       default:
@@ -108,15 +123,22 @@ export default class ScStorage {
    * Method to check if a key exists in a specified type of web storage.
    *
    * @param {String} key
-   * @param {StorageType|null=} [storageType]
+   * @param {Object=} [options]
+   * @param {StorageType=} [options.storageType]
    * @returns {Boolean}
    */
-  has (key, storageType = null) {
-    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
-    if (typeof window === 'undefined') { return false }
-    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
+  has (key, options = {}) {
+    if (typeof window === 'undefined') {
+      return false
+    }
+    if (!isKeyValid(key)) {
+      throw new InvalidKeyException(key)
+    }
+    if (!options.storageType) {
+      options.storageType = this._settings.STORAGE_TYPE
+    }
 
-    switch (storageType) {
+    switch (options.storageType) {
       case StorageType.LOCAL_STORAGE:
         return this._localStorageUtility.has(key)
       case StorageType.SESSION_STORAGE:
@@ -132,15 +154,22 @@ export default class ScStorage {
    * Method to delete a key from a specified type of web storage.
    *
    * @param {String} key
-   * @param {StorageType|null=} [storageType]
+   * @param {Object=} [options]
+   * @param {StorageType=} [options.storageType]
    * @returns {Boolean}
    */
-  delete (key, storageType = null) {
-    if (!testKeyValidCharacters(key)) { throw new InvalidKeyException() }
-    if (typeof window === 'undefined') { return false }
-    if (!storageType) { storageType = this._settings.STORAGE_TYPE }
+  delete (key, options = {}) {
+    if (typeof window === 'undefined') {
+      return false
+    }
+    if (!isKeyValid(key)) {
+      throw new InvalidKeyException()
+    }
+    if (!options.storageType) {
+      options.storageType = this._settings.STORAGE_TYPE
+    }
 
-    switch (storageType) {
+    switch (options.storageType) {
       case StorageType.LOCAL_STORAGE:
         return this._localStorageUtility.delete(key)
       case StorageType.SESSION_STORAGE:
@@ -158,29 +187,37 @@ class LocalStorageUtility {
    * @param {Object} config
    */
   constructor (config) {
-    this._settings = Object.assign({}, DEFAULT, config)
+    this._settings = config
   }
 
   /**
    * Write a value to local storage.
    * @param {String} key
    * @param {*} data
-   * @param {Date | Number | Null} expires
+   * @param {Object=} [options]
+   * @param {Date | Number | null} options.expires
    * @returns {Boolean}
    */
-  write (key, data, expires) {
-    // @todo catch case of invlid expire type (e.g. string, other object
-    if (expires && typeof expires === 'number') {
-      expires = new Date(Date.now() + expires)
+  write (key, data, options) {
+    if (!options.expires) {
+      options.expires = new Date(Date.now() + this._settings.LIFETIME)
+    }
+    if (!(options.expires instanceof Date) && typeof options.expires !== 'number') {
+      throw new Error('Expires can only be a number or a date object')
+    }
+    if (options.expires && typeof options.expires === 'number') {
+      options.expires = new Date(Date.now() + options.expires)
+    }
+
+    let createdAt = new Date().getTime()
+    const item = this.read(key, { asObject: true })
+    if (item && 'createdAt' in item) {
+      createdAt = item.createdAt
     }
 
     window.localStorage.setItem(key,
       JSON.stringify({
-        data,
-        // @todo fix type
-        expires: expires !== null
-          ? expires.getTime()
-          : new Date(Date.now() + this._settings.LIFETIME).getTime()
+        data, expires: options.expires.getTime(), createdAt, updatedAt: new Date().getTime()
       }))
 
     return true
@@ -189,27 +226,34 @@ class LocalStorageUtility {
   /**
    * Read a value from local storage.
    * @param {String} key
+   * @param {Object=} [options]
+   * @param { Boolean= } [options.asObject] = false
    */
-  read (key) {
+  read (key, options = { asObject: false }) {
     const item = window.localStorage.getItem(key)
-    if (!item) { return { data: null } }
+    if (!item) {
+      return options.asObject ? { data: null } : null
+    }
 
     let obj = null
     try {
       obj = JSON.parse(item)
     } catch (e) {
-      // @todo log/info error + hint to delete the item
-      obj = { data: item }
+      console.info("ScStorage read an invalid item from the key '" + key + "' in local storage. Please delete it.")
+      return options.asObject ? { data: item } : item
     }
 
-    if (!('expires' in obj) || !obj.expires) { return obj }
+    if (!('expires' in obj) || !('data' in obj)) {
+      console.info("ScStorage read an invalid item from the key '" + key + "' in local storage. Please delete it.")
+      return options.asObject ? { data: obj } : obj
+    }
 
     if (new Date().getTime() > obj.expires) {
       this.delete(key)
-      return { data: null }
+      return options.asObject ? { data: null } : null
     }
 
-    return obj
+    return options.asObject ? obj : obj.data
   }
 
   /**
@@ -228,6 +272,7 @@ class LocalStorageUtility {
    */
   delete (key) {
     window.localStorage.removeItem(key)
+
     return true
   }
 }
@@ -237,52 +282,73 @@ class SessionStorageUtility {
    * @param {Object} config
    */
   constructor (config) {
-    this._settings = Object.assign({}, DEFAULT, config)
+    this._settings = config
   }
 
   /**
    * Write a value to session storage.
    * @param {String} key
    * @param {*} data
-   * @param {Date | Number | Null } expires
+   * @param {Object=} [options]
+   * @param {Date | Number | null} options.expires
    * @returns {Boolean}
    */
-  write (key, data, expires) {
-    if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires) }
+  write (key, data, options) {
+    if (!options.expires) {
+      options.expires = new Date(Date.now() + this._settings.LIFETIME)
+    }
+    if (!(options.expires instanceof Date) && typeof options.expires !== 'number') {
+      throw new Error('Expires can only be a number or a date object')
+    }
+    if (options.expires && typeof options.expires === 'number') {
+      options.expires = new Date(Date.now() + options.expires)
+    }
+
+    let createdAt = new Date().getTime()
+    const item = this.read(key, { asObject: true })
+    if (item && 'createdAt' in item) {
+      createdAt = item.createdAt
+    }
 
     window.sessionStorage.setItem(key,
       JSON.stringify({
-        data,
-        expires: expires !== null
-          ? expires.getTime()
-          : new Date(Date.now() + this._settings.LIFETIME)
+        data, expires: options.expires.getTime(), createdAt, updatedAt: new Date().getTime()
       }))
+
     return true
   }
 
   /**
    * Read a value from session storage.
    * @param {String} key
+   * @param {Object=} [options]
+   * @param { Boolean= } [options.asObject] = false
    */
-  read (key) {
+  read (key, options = { asObject: false }) {
     const item = window.sessionStorage.getItem(key)
-    if (!item) { return { data: null } }
+    if (!item) {
+      return options.asObject ? { data: null } : null
+    }
 
     let obj = null
     try {
       obj = JSON.parse(item)
     } catch (e) {
-      obj = { data: item }
+      console.info("ScStorage read an invalid item from the key '" + key + "' in session storage. Please delete it.")
+      return options.asObject ? { data: item } : item
     }
 
-    if (!('expires' in obj) || !obj.expires) { return obj }
+    if (!('expires' in obj) || !('data' in obj)) {
+      console.info("ScStorage read an invalid item from the key '" + key + "' in session storage. Please delete it.")
+      return options.asObject ? { data: obj } : obj
+    }
 
     if (new Date().getTime() > obj.expires) {
       this.delete(key)
-      return { data: null }
+      return options.asObject ? { data: null } : null
     }
 
-    return obj
+    return options.asObject ? obj : obj.data
   }
 
   /**
@@ -310,7 +376,7 @@ class CookieUtility {
    * @param {Object} config
    */
   constructor (config) {
-    this._settings = Object.assign({}, DEFAULT, config)
+    this._settings = config
   }
 
   /**
@@ -318,7 +384,7 @@ class CookieUtility {
    * @param {String} key
    * @param {*} data
    * @param {{expires: number}} options
-   * @param {Date|String=} [options.expires]
+   * @param {Date|Number|String=} [options.expires]
    * @param {String=} [options.path] Only relevant if storageType is 'Cookie'.
    * @param {Number=} [options.maxAge] Only relevant if storageType is 'Cookie'.
    * @param {String=} [options.domain] Only relevant if storageType is 'Cookie'.
@@ -334,13 +400,24 @@ class CookieUtility {
     if (options.expires && typeof options.expires === 'number') {
       options.expires = new Date(Date.now() + options.expires)
     }
-    if (options.expires && typeof options.expires !== 'string') {
+    if (options.expires && options.expires instanceof Date) {
       options.expires = options.expires.toUTCString()
     } else {
-      options.expires = new Date(Date.now() + this._settings.LIFETIME)
+      options.expires = new Date(Date.now() + this._settings.LIFETIME).toUTCString()
     }
+    options.storageType = null
 
     const stringifiesOptions = this._stringifyOptions(options)
+
+    let createdAt = new Date().getTime()
+    const item = this.read(key, { asObject: true })
+    if (item && 'createdAt' in item) {
+      createdAt = item.createdAt
+    }
+
+    data = JSON.stringify({
+      data, expires: new Date(options.expires).getTime(), createdAt, updatedAt: new Date().getTime()
+    })
 
     document.cookie = key + '=' + encodeURIComponent(data)
       .replace(/%(2[346BF]|3[AC-F]|40|5[BDE]|60|7[BCD])/g, decodeURIComponent) + stringifiesOptions
@@ -373,13 +450,39 @@ class CookieUtility {
   /**
    * Read a value from cookies.
    * @param {String} key
+   * @param {Object=} [options]
+   * @param { Boolean= } [options.asObject] = false
    */
-  read (key) {
+  read (key, options = { asObject: false }) {
     if (!('cookie' in document)) {
       return { data: null }
     }
-    const cookie = document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)')?.pop() || null
-    return { data: (cookie ? decodeURIComponent(cookie) : null) }
+    let item = document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)')?.pop() || null
+    if (!item) {
+      return options.asObject ? { data: null } : null
+    }
+
+    item = decodeURIComponent(item)
+
+    let obj = null
+    try {
+      obj = JSON.parse(item)
+    } catch (e) {
+      console.info("ScStorage read an invalid item from the key '" + key + "' in cookies. Please delete it.")
+      return options.asObject ? { data: item } : item
+    }
+
+    if (!('expires' in obj) || !('data' in obj)) {
+      console.info("ScStorage read an invalid item from the key '" + key + "' in cookies. Please delete it.")
+      return options.asObject ? { data: obj } : obj
+    }
+
+    if (new Date().getTime() > obj.expires) {
+      this.delete(key)
+      return options.asObject ? { data: null } : null
+    }
+
+    return options.asObject ? obj : obj.data
   }
 
   /**
@@ -397,6 +500,10 @@ class CookieUtility {
    * @returns {boolean}
    */
   delete (key) {
-    return this.write(key, '', { expires: -1 })
+    if (!('cookie' in document)) {
+      return false
+    }
+    document.cookie = key + '=' + '; Max-Age=-99999999;'
+    return true
   }
 }

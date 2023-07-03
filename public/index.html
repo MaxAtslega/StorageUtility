@@ -12,17 +12,9 @@
 <script type="module">
     import ScStorage, { StorageType } from './app/index.js';
 
-    const scStorage = new ScStorage()
-    scStorage.write("test", "value", {expires: new Date(new Date().getTime()+1000000)}, StorageType.COOKIE)
-    console.log(scStorage.read("test", StorageType.COOKIE))
-    scStorage.delete("test", StorageType.COOKIE)
-    console.log(scStorage.read("test", StorageType.COOKIE))
-
-    const scStorage1 = new ScStorage(StorageType.LOCAL_STORAGE)
-    scStorage1.write("test", "value", {expires: new Date(new Date().getTime()+1000000)})
-    console.log(scStorage1.read("test"))
-    scStorage1.delete("test")
-    console.log(scStorage1.read("test"))
+    const scStorage = new ScStorage({STORAGE_TYPE: StorageType.COOKIE})
+    console.log(scStorage.has("test"))
+    console.log(scStorage.read("test", {asObject: true}))
 </script>
 </body>
 </html>
