@@ -24,6 +24,8 @@ function testKeyValidCharacters (key) {
 }
 
 class InvalidKeyException extends Error {
+  // @todo wrong key as argument/property -> render in the error message
+  // nice to have: the wrong key mentioned
   constructor () {
     super('Please provide a valid key')
     this.name = this.constructor.name
@@ -35,8 +37,9 @@ export default class ScStorage {
    * @param {Object} config
    */
   constructor (config) {
-    this._settings = Object.assign({}, DEFAULT, config)
 
+    this._settings = Object.assign({}, DEFAULT, config)
+    // @todo validation of configs -> here + sub classes -> no invalid option -> exception
     this._localStorageUtility = new LocalStorageUtility(this._settings)
     this._sessionStorageUtility = new SessionStorageUtility(this._settings)
     this._cookieUtility = new CookieUtility(this._settings)
@@ -67,6 +70,7 @@ export default class ScStorage {
   }
 
   /**
+   * @todo refactor interface (of all: main + utilities)
    * Method to write data into a specified type of web storage.
    *
    * @param {String} key
@@ -165,15 +169,20 @@ class LocalStorageUtility {
    * @returns {Boolean}
    */
   write (key, data, expires) {
-    if (expires && typeof expires === 'number') { expires = new Date(Date.now() + expires) }
+    // @todo catch case of invlid expire type (e.g. string, other object
+    if (expires && typeof expires === 'number') {
+      expires = new Date(Date.now() + expires)
+    }
 
     window.localStorage.setItem(key,
       JSON.stringify({
         data,
+        // @todo fix type
         expires: expires !== null
           ? expires.getTime()
-          : new Date(Date.now() + this._settings.LIFETIME)
+          : new Date(Date.now() + this._settings.LIFETIME).getTime()
       }))
+
     return true
   }
 
@@ -189,6 +198,7 @@ class LocalStorageUtility {
     try {
       obj = JSON.parse(item)
     } catch (e) {
+      // @todo log/info error + hint to delete the item
       obj = { data: item }
     }
 
