@@ -65,8 +65,7 @@ export default class ScStorage {
    * @param {String=} [options.domain] Only relevant if storageType is 'Cookie'.
    * @param {Boolean=} [options.secure] Only relevant if storageType is 'Cookie'.
    * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
-   * @param {(Boolean | 'none' | 'lax' | 'strict')=} [options.sameSite] Only relevant if storageType is 'Cookie'.
-   * @param {Date=} [options.encode] Only relevant if storageType is 'Cookie'.
+   * @param {Boolean | 'none' | 'lax' | 'strict'} [options.sameSite] Only relevant if storageType is 'Cookie'.
    * @param {StorageType=} [storageType]
    * @returns {boolean}
    */
@@ -306,11 +305,12 @@ class CookieUtility {
    * @param {Boolean=} [options.secure] Only relevant if storageType is 'Cookie'.
    * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
    * @param {(Boolean | 'none' | 'lax' | 'strict')=} [options.sameSite] Only relevant if storageType is 'Cookie'.
-   * @param {Date=} [options.encode] Only relevant if storageType is 'Cookie'.
    * @returns {Boolean}
    */
   write (key, data, options) {
-    if (!('cookie' in document)) { return false }
+    if (!('cookie' in document)) {
+      return false
+    }
     if (options.expires && typeof options.expires === 'number') {
       options.expires = new Date(Date.now() + options.expires)
     }
@@ -335,10 +335,14 @@ class CookieUtility {
   _stringifyOptions (options) {
     let stringifiedOptions = ''
     for (const attributeName in options) {
-      if (!options[attributeName]) { continue }
+      if (!options[attributeName]) {
+        continue
+      }
       stringifiedOptions += '; ' + attributeName
 
-      if (options[attributeName] === true) { continue }
+      if (options[attributeName] === true) {
+        continue
+      }
 
       // Considers RFC 6265 section 5.2
       stringifiedOptions += '=' + options[attributeName].split(';')[0]
@@ -351,7 +355,9 @@ class CookieUtility {
    * @param {String} key
    */
   read (key) {
-    if (!('cookie' in document)) { return { data: null } }
+    if (!('cookie' in document)) {
+      return { data: null }
+    }
     const cookie = document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)')?.pop() || null
     return { data: (cookie ? decodeURIComponent(cookie) : null) }
   }
