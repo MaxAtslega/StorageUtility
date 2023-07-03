@@ -13,6 +13,7 @@
     import ScStorage, { StorageType } from './app/index.js';
 
     const scStorage = new ScStorage({STORAGE_TYPE: StorageType.COOKIE})
+    scStorage.write("test", ["test","test2"], {expires: new Date(new Date().getTime()+100000)})
     console.log(scStorage.has("test"))
     console.log(scStorage.read("test", {asObject: true}))
 </script>

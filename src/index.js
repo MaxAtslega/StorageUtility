@@ -42,7 +42,6 @@ export default class ScStorage {
   constructor (config = {}) {
     this._settings = Object.assign({}, DEFAULT, config)
 
-    // @todo validation of configs -> here + sub classes -> no invalid option -> exception
     this._localStorageUtility = new LocalStorageUtility(this._settings)
     this._sessionStorageUtility = new SessionStorageUtility(this._settings)
     this._cookieUtility = new CookieUtility(this._settings)
@@ -397,6 +396,16 @@ class CookieUtility {
     if (!('cookie' in document)) {
       return false
     }
+    if (options.path && typeof options.path !== 'string') throw new Error('Option.path must be a string')
+    if (options.maxAge && typeof options.maxAge !== 'number') throw new Error('Option.maxAge must be a number')
+    if (options.domain && typeof options.domain !== 'number') throw new Error('Option.domain must be a number')
+    if (options.secure && typeof options.secure !== 'boolean') throw new Error('Option.secure must be a boolean')
+    if (options.httpOnly && typeof options.httpOnly !== 'boolean') throw new Error('Option.httpOnly must be a boolean')
+    if (options.sameSite && (typeof options.sameSite !== 'boolean' && options.sameSite !== 'none' &&
+        options.sameSite !== 'lax' && options.sameSite !== 'strict')) {
+      throw new Error('Option.sameSite must be "none", "strict", "lax" or a boolean')
+    }
+
     if (options.expires && typeof options.expires === 'number') {
       options.expires = new Date(Date.now() + options.expires)
     }
