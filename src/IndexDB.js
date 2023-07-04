@@ -8,16 +8,16 @@ export default class IndexDbUtility {
 
   /**
    * Write a value to indexDB.
-   * @param {String} dbName
    * @param {String} storeName
    * @param {*} data
    * @param {Object} [options]
+   * @param {String} [options.databaseName]
    * @param {Date | Number} [options.expires]
    * @param {Array} [options.indexes] Only relevant for creating the database
    * @param {Boolean} [options.update]
-   * @param {Boolean} [options.closeDatabase] = true
+   * @param {Boolean} [options.closeDatabase]
    */
-  async write (dbName, storeName, data = [], options) {
+  write (storeName, data = {}, options) {
     if (!('indexedDB' in window)) {
       throw new Error("This browser doesn't support IndexedDB.")
     }
@@ -34,11 +34,17 @@ export default class IndexDbUtility {
     if (options.update && typeof options.update !== 'boolean') {
       throw new Error('Option.update must be a boolean')
     }
+    if (options.databaseName && typeof options.databaseName !== 'string') {
+      throw new Error('Option.databaseName must be a string')
+    }
+    if (!options.databaseName) {
+      options.databaseName = this._settings.INDEXDB_DATABASE
+    }
     if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
       throw new Error('Option.closeDatabase must be a boolean')
     }
     if (typeof options.closeDatabase !== 'boolean') {
-      options.closeDatabase = true
+      options.closeDatabase = this._settings.INDEXDB_CLOSE_AFTER_REQUEST
     }
     if (options.update && (!('id' in data) || typeof data.id !== 'number')) {
       throw new Error('In order to update the data, you have to provide an id as number in your data object.')
@@ -46,8 +52,11 @@ export default class IndexDbUtility {
     if (options.indexes && (!Array.isArray(options.indexes) || typeof options.indexes[0]?.indexName !== 'string' ||
       typeof options.indexes[0]?.indexKey !== 'string' || typeof options.indexes[0]?.indexOptions?.unqiue !== 'boolean' ||
       typeof options.indexes[0]?.indexOptions?.multiEntry !== 'boolean')) {
-      throw new Error("The Array 'Indexes' in option doesn't follow the requirements. {indexKey: string, " +
+      throw new Error("The Array 'indexes' in option does not meet the requirements. It should follows this scheme {indexKey: string, " +
         'indexName: string, indexOptions: {unqiue: boolean, multiEntry: boolean}}')
+    }
+    if (data && typeof data !== 'object') {
+      throw new Error('data must be an object')
     }
     if ('expires' in data) {
       throw new Error('You are not allowed to add "expires" in the data object')
@@ -55,38 +64,46 @@ export default class IndexDbUtility {
     if ('createdAt' in data) {
       throw new Error('You are not allowed to add "createdAt" in the data object')
     }
+    if (!options.update && 'id' in data) {
+      throw new Error('You are not allowed to add "id" in the data object if you are not updating the data')
+    }
+
     if ('updatedAt' in data) {
       throw new Error('You are not allowed to add "updatedAt" in the data object')
     }
 
     return new Promise((resolve, reject) => {
-      DatabaseUtility.createStore(dbName, storeName, options.indexes).then(_ => {
-        DatabaseUtility.getStore(dbName, storeName).then(store => {
+      DatabaseUtility.createStore(options.databaseName, storeName, options.indexes).then(_ => {
+        DatabaseUtility.getStore(options.databaseName, storeName).then(store => {
           if (options.update) {
             // Fetch data from store
             const idQuery = store.get(data.id)
 
             idQuery.onerror = function () {
               if (options.closeDatabase) {
-                DatabaseUtility.closeDB(dbName)
+                DatabaseUtility.closeDB(options.databaseName)
               }
               reject(new Error('Unable to update data in store'))
             }
 
             idQuery.onsuccess = function () {
-              const req = store.put({ ...data, expires: idQuery.result.expires, createdAt: idQuery.result.createdAt, updatedAt: new Date().getTime() })
+              if (idQuery.result) {
+                const req = store.put({ ...data, expires: idQuery.result.expires, createdAt: idQuery.result.createdAt, updatedAt: new Date().getTime() })
 
-              req.onsuccess = event => {
-                if (options.closeDatabase) {
-                  DatabaseUtility.closeDB(dbName)
+                req.onsuccess = event => {
+                  if (options.closeDatabase) {
+                    DatabaseUtility.closeDB(options.databaseName)
+                  }
+                  resolve(true)
                 }
-                resolve(true)
-              }
-              req.onerror = () => {
-                if (options.closeDatabase) {
-                  DatabaseUtility.closeDB(dbName)
+                req.onerror = () => {
+                  if (options.closeDatabase) {
+                    DatabaseUtility.closeDB(options.databaseName)
+                  }
+                  reject(new Error('Unable to update data in store'))
                 }
-                reject(new Error('Unable to update data in store'))
+              } else {
+                reject(new Error(`Error while updating data in ${options.databaseName}. Id ${data.id} not found.`))
               }
             }
           } else {
@@ -94,13 +111,13 @@ export default class IndexDbUtility {
 
             req.onsuccess = event => {
               if (options.closeDatabase) {
-                DatabaseUtility.closeDB(dbName)
+                DatabaseUtility.closeDB(options.databaseName)
               }
               resolve(true)
             }
             req.onerror = () => {
               if (options.closeDatabase) {
-                DatabaseUtility.closeDB(dbName)
+                DatabaseUtility.closeDB(options.databaseName)
               }
               reject(new Error('Unable to add data to store'))
             }
@@ -128,7 +145,6 @@ class DatabaseUtility {
         resolve(db)
       }).catch(_ => {
         const req = indexedDB.open(dbName, version)
-        console.log('eew123')
 
         req.onsuccess = event => {
           this._databaseList[dbName] = event.target.result

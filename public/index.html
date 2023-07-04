@@ -21,12 +21,12 @@
 
     })
 
-    console.log(await index.write("TodoApplication", "todos", {todo: "Gassie gehen2", id: 2 }, {indexes: [
+    console.log(await index.write("todos", {todo: "Gassie gehen2" }, {indexes: [
     {
       indexName: 'todo',
       indexKey: 'todo',
       indexOptions: { unqiue: false, multiEntry: true }
-    }], update: true, closeDatabase: false},
+    }], update: false, closeDatabase: false, databaseName: "TodoDatabase"},
     ))
 </script>
 </body>
