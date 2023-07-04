@@ -13,8 +13,9 @@ export default class IndexDbUtility {
    * @param {*} data
    * @param {Object} [options]
    * @param {Date | Number} [options.expires]
-   * @param {Array} [options.indexes]
+   * @param {Array} [options.indexes] Only relevant for creating the database
    * @param {Boolean} [options.update]
+   * @param {Boolean} [options.closeDatabase] = true
    */
   async write (dbName, storeName, data = [], options) {
     if (!('indexedDB' in window)) {
@@ -32,6 +33,12 @@ export default class IndexDbUtility {
     }
     if (options.update && typeof options.update !== 'boolean') {
       throw new Error('Option.update must be a boolean')
+    }
+    if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
+      throw new Error('Option.closeDatabase must be a boolean')
+    }
+    if (typeof options.closeDatabase !== 'boolean') {
+      options.closeDatabase = true
     }
     if (options.update && (!('id' in data) || typeof data.id !== 'number')) {
       throw new Error('In order to update the data, you have to provide an id as number in your data object.')
@@ -60,6 +67,9 @@ export default class IndexDbUtility {
             const idQuery = store.get(data.id)
 
             idQuery.onerror = function () {
+              if (options.closeDatabase) {
+                DatabaseUtility.closeDB(dbName)
+              }
               reject(new Error('Unable to update data in store'))
             }
 
@@ -67,9 +77,15 @@ export default class IndexDbUtility {
               const req = store.put({ ...data, expires: idQuery.result.expires, createdAt: idQuery.result.createdAt, updatedAt: new Date().getTime() })
 
               req.onsuccess = event => {
+                if (options.closeDatabase) {
+                  DatabaseUtility.closeDB(dbName)
+                }
                 resolve(true)
               }
               req.onerror = () => {
+                if (options.closeDatabase) {
+                  DatabaseUtility.closeDB(dbName)
+                }
                 reject(new Error('Unable to update data in store'))
               }
             }
@@ -77,9 +93,15 @@ export default class IndexDbUtility {
             const req = store.add({ ...data, expires: new Date().getTime(), createdAt: new Date().getTime(), updatedAt: new Date().getTime() })
 
             req.onsuccess = event => {
+              if (options.closeDatabase) {
+                DatabaseUtility.closeDB(dbName)
+              }
               resolve(true)
             }
             req.onerror = () => {
+              if (options.closeDatabase) {
+                DatabaseUtility.closeDB(dbName)
+              }
               reject(new Error('Unable to add data to store'))
             }
           }
@@ -98,21 +120,24 @@ class DatabaseUtility {
    * @param {Object} listener
    * @param {Number} version
    */
-  static openDB (dbName, listener, version = new Date().getTime()) {
+  static openDB (dbName, listener, version) {
     const { onupgradeneeded } = listener
 
-    this.closeDB(dbName)
-
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(dbName, version)
+      this.getDB(dbName).then(db => {
+        resolve(db)
+      }).catch(_ => {
+        const req = indexedDB.open(dbName, version)
+        console.log('eew123')
 
-      req.onsuccess = event => {
-        this._databaseList[dbName] = event.target.result
-        resolve(event.target.result)
-      }
+        req.onsuccess = event => {
+          this._databaseList[dbName] = event.target.result
+          resolve(event.target.result)
+        }
 
-      req.onupgradeneeded = onupgradeneeded
-      req.onerror = reject
+        req.onupgradeneeded = onupgradeneeded
+        req.onerror = reject
+      })
     })
   }
 
@@ -122,7 +147,6 @@ class DatabaseUtility {
    */
   static closeDB (dbName) {
     const currentDatabase = this._databaseList[dbName]
-
     if (currentDatabase) {
       delete this._databaseList[dbName]
       currentDatabase.close()
@@ -147,6 +171,10 @@ class DatabaseUtility {
     })
   }
 
+  /**
+   * Method to get a database
+   * @param {String} dbName
+   */
   static getDB (dbName) {
     const curDB = this._databaseList[dbName]
 
@@ -157,7 +185,12 @@ class DatabaseUtility {
     }
   }
 
-  static async getStore (dbName, storeName) {
+  /**
+   * Method to get a store in database
+   * @param {String} dbName
+   * @param {String} storeName
+   */
+  static async getStore (dbName, storeName, indexes = []) {
     const currentDatabase = await this.getDB(dbName)
 
     return new Promise((resolve, reject) => {
@@ -173,7 +206,7 @@ class DatabaseUtility {
   }
 
   /**
-   * Method to create store
+   * Method to create store in database
    * @param {String} dbName
    * @param {String} storeName
    * @param {Array} indexes
