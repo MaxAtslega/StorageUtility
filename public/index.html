@@ -10,12 +10,24 @@
 <h1>Hello World.</h1>
 
 <script type="module">
-    import ScStorage, { StorageType } from './app/index.js';
+    import ScStorage, { StorageType, IndexDbUtility } from '/app/index.js';
 
-    const scStorage = new ScStorage({STORAGE_TYPE: StorageType.COOKIE})
+    /*const scStorage = new ScStorage({STORAGE_TYPE: StorageType.COOKIE})
     scStorage.write("test", ["test","test2"], {expires: new Date(new Date().getTime()+100000)})
     console.log(scStorage.has("test"))
-    console.log(scStorage.read("test", {asObject: true}))
+    console.log(scStorage.read("test", {asObject: true}))*/
+
+    const index = new IndexDbUtility({
+
+    })
+
+    console.log(await index.write("TodoApplication", "todos", {todo: "Gassie gehen2", id: 2 }, {indexes: [
+    {
+      indexName: 'todo',
+      indexKey: 'todo',
+      indexOptions: { unqiue: false, multiEntry: true }
+    }], update: true},
+    ))
 </script>
 </body>
 </html>
