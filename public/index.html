@@ -21,13 +21,13 @@
       INDEXDB_DATABASE: 'TodoDatabase'
     })
 
-    /*console.log(await index.write("todos", {todo: "Gassie gehen2" }, {indexes: [
+    console.log(await index.write("todos", {todo: "Gassie gehen" }, {indexes: [
     {
       indexName: 'todo',
       indexKey: 'todo',
       indexOptions: { unqiue: false, multiEntry: true }
     }], update: false, closeDatabase: false, databaseName: "TodoDatabase", expires: 100000},
-    ))*/
+    ))
 
     console.log(await index.delete("TodoDatabase", {databaseName: "TodoDatabase", type: "data"},
     ))

@@ -54,7 +54,7 @@ export default class ScStorage {
     this._sessionStorageUtility = new SessionStorageUtility(this._settings)
     this._cookieUtility = new CookieUtility(this._settings)
 
-    if (this._settings.ENABLE_INDEXDB) {
+    if (this._settings.INDEXDB_ENABLE) {
       this.indexDbUtility = new IndexDbUtility(this._settings)
     }
   }
