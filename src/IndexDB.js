@@ -27,7 +27,9 @@ export default class IndexDbUtility {
     if (!('indexedDB' in window)) {
       throw new Error("This browser doesn't support IndexedDB.")
     }
-
+    if (typeof storeName !== 'string') {
+      throw new Error('storeName must be a boolean')
+    }
     if (!options.expires) {
       options.expires = new Date(Date.now() + this._settings.LIFETIME)
     }
@@ -160,6 +162,12 @@ export default class IndexDbUtility {
     databaseName: this._settings.INDEXDB_DATABASE,
     closeDatabase: this._settings.INDEXDB_CLOSE_AFTER_REQUEST
   }) {
+    if (!('indexedDB' in window)) {
+      throw new Error("This browser doesn't support IndexedDB.")
+    }
+    if (typeof storeName !== 'string') {
+      throw new Error('storeName must be a boolean')
+    }
     if (options.databaseName && typeof options.databaseName !== 'string') {
       throw new Error('Option.databaseName must be a string')
     }
@@ -175,6 +183,9 @@ export default class IndexDbUtility {
     if (options.index && typeof options.index !== 'string') {
       throw new Error('Option.index must be a string')
     }
+    if (options.nameValue && (!options.index && typeof options.nameValue !== 'number')) {
+      throw new Error('Option.index must be a number')
+    }
     if (options.nameValue && (typeof options.nameValue !== 'string' && typeof options.nameValue !== 'number')) {
       throw new Error('Option.index must be a string or number')
     }
@@ -186,114 +197,194 @@ export default class IndexDbUtility {
     }
 
     return new Promise((resolve, reject) => {
-      DatabaseUtility.getStore(options.databaseName, storeName).then(store => {
-        const dataArr = []
+      DatabaseUtility.openDB(options.databaseName, {}).then(_ => {
+        DatabaseUtility.getStore(options.databaseName, storeName).then(store => {
+          const dataArr = []
 
-        if (options.index && options.nameValue) {
-          const req = store.index(options.index).get(options.nameValue)
-          req.onsuccess = event => {
-            const result = event.target.result
+          if (options.index && options.nameValue) {
+            const req = store.index(options.index).get(options.nameValue)
+            req.onsuccess = event => {
+              const result = event.target.result
 
-            if (result) {
-              if (new Date().getTime() > result.expires) {
-                this.delete(result.id, { storeName, databaseName: options.databaseName })
-                resolve(options.asObject ? { data: null } : null)
-              } else {
-                resolve(options.asObject ? { data: result } : result)
-              }
-            } else {
-              resolve(options.asObject ? { data: null } : null)
-            }
-          }
-
-          req.onerror = (err) => {
-            if (options.closeDatabase) {
-              DatabaseUtility.closeDB(options.databaseName)
-            }
-            reject(err)
-          }
-        } else if (!options.index && options.nameValue) {
-          const req = store.get(options.nameValue)
-          req.onsuccess = event => {
-            const result = event.target.result
-
-            if (result) {
-              if (new Date().getTime() > result.expires) {
-                this.delete(result.id, { storeName, databaseName: options.databaseName })
-                resolve(options.asObject ? { data: null } : null)
-              } else {
-                resolve(options.asObject ? { data: result } : result)
-              }
-            } else {
-              resolve(options.asObject ? { data: null } : null)
-            }
-          }
-
-          req.onerror = (err) => {
-            if (options.closeDatabase) {
-              DatabaseUtility.closeDB(options.databaseName)
-            }
-            reject(err)
-          }
-        } else {
-          let req
-          if (options.index) {
-            console.log(options.index)
-            req = store.index(options.index).openCursor()
-          } else {
-            req = store.openCursor()
-          }
-
-          req.onsuccess = event => {
-            const cursor = event.target.result
-            if (cursor) {
-              if (!('expires' in cursor.value) || !cursor.value.expires) {
-                console.info("ScStorage read an invalid item without expire from the store '" + storeName + `' in ${options.databaseName}. Please delete it.`)
-                dataArr.push(cursor.value)
-              } else {
-                if (new Date().getTime() > cursor.value.expires) {
-                  this.delete(cursor.value.id, { storeName, databaseName: options.databaseName })
+              if (result) {
+                if (new Date().getTime() > result.expires) {
+                  this.delete(result.id, { storeName, databaseName: options.databaseName })
+                  resolve(options.asObject ? { data: null } : null)
                 } else {
-                  dataArr.push(cursor.value)
+                  resolve(options.asObject ? { data: result } : result)
                 }
+              } else {
+                resolve(options.asObject ? { data: null } : null)
               }
-              cursor.continue()
-            } else {
+            }
+
+            req.onerror = (err) => {
               if (options.closeDatabase) {
                 DatabaseUtility.closeDB(options.databaseName)
               }
-              resolve(options.asObject ? { data: dataArr } : dataArr)
+              reject(err)
             }
-          }
+          } else if (!options.index && options.nameValue) {
+            const req = store.get(options.nameValue)
+            req.onsuccess = event => {
+              const result = event.target.result
 
-          req.onerror = (err) => {
-            if (options.closeDatabase) {
-              DatabaseUtility.closeDB(options.databaseName)
+              if (result) {
+                if (new Date().getTime() > result.expires) {
+                  this.delete(result.id, { storeName, databaseName: options.databaseName })
+                  resolve(options.asObject ? { data: null } : null)
+                } else {
+                  resolve(options.asObject ? { data: result } : result)
+                }
+              } else {
+                resolve(options.asObject ? { data: null } : null)
+              }
             }
-            reject(err)
+
+            req.onerror = (err) => {
+              if (options.closeDatabase) {
+                DatabaseUtility.closeDB(options.databaseName)
+              }
+              reject(err)
+            }
+          } else {
+            let req
+            if (options.index) {
+              console.log(options.index)
+              req = store.index(options.index).openCursor()
+            } else {
+              req = store.openCursor()
+            }
+
+            req.onsuccess = event => {
+              const cursor = event.target.result
+              if (cursor) {
+                if (!('expires' in cursor.value) || !cursor.value.expires) {
+                  console.info("ScStorage read an invalid item without expire from the store '" + storeName + `' in ${options.databaseName}. Please delete it.`)
+                  dataArr.push(cursor.value)
+                } else {
+                  if (new Date().getTime() > cursor.value.expires) {
+                    this.delete(cursor.value.id, { storeName, databaseName: options.databaseName })
+                  } else {
+                    dataArr.push(cursor.value)
+                  }
+                }
+                cursor.continue()
+              } else {
+                if (options.closeDatabase) {
+                  DatabaseUtility.closeDB(options.databaseName)
+                }
+                resolve(options.asObject ? { data: dataArr } : dataArr)
+              }
+            }
+
+            req.onerror = (err) => {
+              if (options.closeDatabase) {
+                DatabaseUtility.closeDB(options.databaseName)
+              }
+              reject(err)
+            }
           }
-        }
-      }).catch(error => {
-        if (options.closeDatabase) {
-          DatabaseUtility.closeDB(options.databaseName)
-        }
-        reject(error)
+        }).catch(error => {
+          if (options.closeDatabase) {
+            DatabaseUtility.closeDB(options.databaseName)
+          }
+          reject(error)
+        })
       })
     })
   }
 
   /**
    * Read a value from indexDB.
-   * @param {Number} id
+   * @param {Number|String} key
    * @param {Object} options
-   * @param {String} options.storeName
+   * @param {String} [options.storeName]
+   * @param {'data'|'database'|'store'} [options.type] = 'data'
    * @param {String} [options.databaseName]
-   * @param {Number} [options.index]
    * @param {Boolean} [options.closeDatabase]
-   * @param { Boolean= } [options.asObject] = false
    */
-  delete (id, options = { storeName: '', databaseName: this._settings.INDEXDB_DATABASE }) {
-    console.log(id)
+  delete (key, options) {
+    if (!('indexedDB' in window)) {
+      throw new Error("This browser doesn't support IndexedDB.")
+    }
+    if (typeof key !== 'string' && typeof key !== 'number') {
+      throw new Error('Option.key must be a string or number')
+    }
+    if (options.storeName && typeof options.storeName !== 'string') {
+      throw new Error('Option.storeName must be a string')
+    }
+    if (typeof options.type !== 'string') {
+      options.type = 'data'
+    }
+    if (options.type !== 'data' &&
+      options.type !== 'database' && options.type !== 'store') {
+      throw new Error('Option.type must be "database", "data" or "store"')
+    }
+
+    if (options.databaseName && typeof options.databaseName !== 'string') {
+      throw new Error('Option.databaseName must be a string')
+    }
+    if (!options.databaseName) {
+      options.databaseName = this._settings.INDEXDB_DATABASE
+    }
+    if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
+      throw new Error('Option.closeDatabase must be a boolean')
+    }
+    if (typeof options.closeDatabase !== 'boolean') {
+      options.closeDatabase = this._settings.INDEXDB_CLOSE_AFTER_REQUEST
+    }
+
+    return new Promise((resolve, reject) => {
+      if (options.type === 'database') {
+        DatabaseUtility.closeDB(key)
+
+        const dbConnect = indexedDB.deleteDatabase(key)
+        dbConnect.onsuccess = resolve
+        dbConnect.onerror = reject
+      } else if (options.type === 'store') {
+        if (!options.databaseName) {
+          throw new Error('Option.databaseName is required')
+        }
+        DatabaseUtility.closeDB(key).then(_ => {
+          DatabaseUtility.openDB(options.databaseName, {
+            onupgradeneeded: event => {
+              const db = event.target.result
+
+              if (db.objectStoreNames.contains(key)) {
+                db.deleteObjectStore(key)
+              }
+            }
+          }).then(_ => {
+            if (options.closeDatabase) {
+              DatabaseUtility.closeDB(options.databaseName)
+            }
+          })
+        })
+        resolve(true)
+      } else {
+        if (!options.databaseName) {
+          throw new Error('Option.databaseName is required')
+        }
+        if (!options.storeName) {
+          throw new Error('Option.storeName is required')
+        }
+        DatabaseUtility.openDB(options.databaseName, {}).then(_ => {
+          DatabaseUtility.getStore(options.databaseName, options.storeName).then(store => {
+            if (store) {
+              store.delete(key)
+
+              return true
+            }
+          }).catch(error => {
+            if (options.closeDatabase) {
+              DatabaseUtility.closeDB(options.databaseName)
+            }
+            reject(error)
+          })
+        })
+      }
+    })
   }
 }
 
@@ -306,7 +397,7 @@ class DatabaseUtility {
    * @param {Object} listener
    * @param {Number} version
    */
-  static openDB (dbName, listener, version) {
+  static openDB (dbName, listener, version = new Date().getTime()) {
     const { onupgradeneeded } = listener
 
     return new Promise((resolve, reject) => {
@@ -339,21 +430,6 @@ class DatabaseUtility {
     } else {
       return Promise.resolve()
     }
-  }
-
-  /**
-   * Method to delete a database
-   * @param {String} dbName
-   */
-  static async deleteDB (dbName) {
-    await this.closeDB(dbName)
-
-    return new Promise((resolve, reject) => {
-      const dbConnect = indexedDB.deleteDatabase(dbName)
-
-      dbConnect.onsuccess = resolve
-      dbConnect.onerror = reject
-    })
   }
 
   /**
@@ -397,7 +473,7 @@ class DatabaseUtility {
    * @param {Array} indexes
    * @param {Number} version
    */
-  static async createStore (dbName, storeName, indexes = [], version = new Date().getTime()) {
+  static async createStore (dbName, storeName, indexes = []) {
     let store = null
 
     const keyOptions = {
@@ -427,8 +503,7 @@ class DatabaseUtility {
           store = db.createObjectStore(storeName, keyOptions)
           indexes.forEach(e => store.createIndex(e.indexName, e.indexKey, e.indexOptions))
         }
-      },
-      version
+      }
     )
 
     return store
