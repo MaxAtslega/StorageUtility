@@ -15,6 +15,7 @@ export const StorageType = {
 const DEFAULT = {
   STORAGE_TYPE: StorageType.LOCAL_STORAGE,
   LIFETIME: 86400000,
+  AS_OBJECT: false,
 
   INDEXDB_ENABLE: false,
   INDEXDB_CLOSE_AFTER_REQUEST: true,
@@ -239,7 +240,14 @@ class LocalStorageUtility {
    * @param {Object=} [options]
    * @param { Boolean= } [options.asObject] = false
    */
-  read (key, options = { asObject: false }) {
+  read (key, options = { asObject: this._settings.AS_OBJECT }) {
+    if (options.asObject && typeof options.asObject !== 'boolean') {
+      throw new Error('Options.asObject must be a boolean')
+    }
+    if (typeof options.asObject !== 'boolean') {
+      options.asObject = this._settings.AS_OBJECT
+    }
+
     const item = window.localStorage.getItem(key)
     if (!item) {
       return options.asObject ? { data: null } : null
@@ -334,7 +342,14 @@ class SessionStorageUtility {
    * @param {Object=} [options]
    * @param { Boolean= } [options.asObject] = false
    */
-  read (key, options = { asObject: false }) {
+  read (key, options = { asObject: this._settings.AS_OBJECT }) {
+    if (options.asObject && typeof options.asObject !== 'boolean') {
+      throw new Error('Options.asObject must be a boolean')
+    }
+    if (typeof options.asObject !== 'boolean') {
+      options.asObject = this._settings.AS_OBJECT
+    }
+
     const item = window.sessionStorage.getItem(key)
     if (!item) {
       return options.asObject ? { data: null } : null
@@ -489,9 +504,15 @@ class CookieUtility {
    * @param {Object=} [options]
    * @param { Boolean= } [options.asObject] = false
    */
-  read (key, options = { asObject: false }) {
+  read (key, options = { asObject: this._settings.AS_OBJECT }) {
     if (!('cookie' in document)) {
       return { data: null }
+    }
+    if (options.asObject && typeof options.asObject !== 'boolean') {
+      throw new Error('Options.asObject must be a boolean')
+    }
+    if (typeof options.asObject !== 'boolean') {
+      options.asObject = this._settings.AS_OBJECT
     }
     let item = document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)')?.pop() || null
     if (!item) {
