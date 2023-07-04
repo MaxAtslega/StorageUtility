@@ -15,7 +15,11 @@ export const StorageType = {
 const DEFAULT = {
   STORAGE_TYPE: StorageType.LOCAL_STORAGE,
   LIFETIME: 86400000,
-  ENABLE_INDEXDB: false
+
+  INDEXDB_ENABLE: false,
+  INDEXDB_CLOSE_AFTER_REQUEST: true,
+  INDEXDB_DATABASE: 'default'
+
 }
 
 /**
