@@ -18,7 +18,7 @@
     console.log(scStorage.read("test", {asObject: true}))*/
 
     const index = new IndexDbUtility({
-
+      INDEXDB_DATABASE: 'TodoDatabase'
     })
 
     console.log(await index.write("todos", {todo: "Gassie gehen2" }, {indexes: [
@@ -26,7 +26,10 @@
       indexName: 'todo',
       indexKey: 'todo',
       indexOptions: { unqiue: false, multiEntry: true }
-    }], update: false, closeDatabase: false, databaseName: "TodoDatabase"},
+    }], update: false, closeDatabase: false, databaseName: "TodoDatabase", expires: 100000},
+    ))
+
+    console.log(await index.read("todos", {databaseName: "TodoDatabase", closeDatabase: false, nameValue: 100 },
     ))
 </script>
 </body>

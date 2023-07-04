@@ -9,7 +9,7 @@ export default class IndexDbUtility {
   /**
    * Write a value to indexDB.
    * @param {String} storeName
-   * @param {*} data
+   * @param {Object} data
    * @param {Object} [options]
    * @param {String} [options.databaseName]
    * @param {Date | Number} [options.expires]
@@ -17,7 +17,13 @@ export default class IndexDbUtility {
    * @param {Boolean} [options.update]
    * @param {Boolean} [options.closeDatabase]
    */
-  write (storeName, data = {}, options) {
+  write (storeName, data = {}, options = {
+    databaseName: this._settings.INDEXDB_DATABASE,
+    closeDatabase: this._settings.INDEXDB_CLOSE_AFTER_REQUEST,
+    expires: new Date(Date.now() + this._settings.LIFETIME),
+    update: false,
+    indexes: {}
+  }) {
     if (!('indexedDB' in window)) {
       throw new Error("This browser doesn't support IndexedDB.")
     }
@@ -33,6 +39,9 @@ export default class IndexDbUtility {
     }
     if (options.update && typeof options.update !== 'boolean') {
       throw new Error('Option.update must be a boolean')
+    }
+    if (typeof options.update !== 'boolean') {
+      options.update = false
     }
     if (options.databaseName && typeof options.databaseName !== 'string') {
       throw new Error('Option.databaseName must be a string')
@@ -107,7 +116,7 @@ export default class IndexDbUtility {
               }
             }
           } else {
-            const req = store.add({ ...data, expires: new Date().getTime(), createdAt: new Date().getTime(), updatedAt: new Date().getTime() })
+            const req = store.add({ ...data, expires: options.expires.getTime(), createdAt: new Date().getTime(), updatedAt: new Date().getTime() })
 
             req.onsuccess = event => {
               if (options.closeDatabase) {
@@ -122,9 +131,169 @@ export default class IndexDbUtility {
               reject(new Error('Unable to add data to store'))
             }
           }
+        }).catch(error => {
+          if (options.closeDatabase) {
+            DatabaseUtility.closeDB(options.databaseName)
+          }
+          reject(error)
         })
+      }).catch(error => {
+        if (options.closeDatabase) {
+          DatabaseUtility.closeDB(options.databaseName)
+        }
+        reject(error)
       })
     })
+  }
+
+  /**
+   * Read a value from indexDB.
+   * @param {String} storeName
+   * @param {Object} [options]
+   * @param {String} [options.databaseName]
+   * @param {String} [options.index]
+   * @param {String | Number} [options.nameValue]
+   * @param {Boolean} [options.closeDatabase]
+   * @param {Boolean} [options.asObject] = false
+   */
+  read (storeName, options = {
+    databaseName: this._settings.INDEXDB_DATABASE,
+    closeDatabase: this._settings.INDEXDB_CLOSE_AFTER_REQUEST
+  }) {
+    if (options.databaseName && typeof options.databaseName !== 'string') {
+      throw new Error('Option.databaseName must be a string')
+    }
+    if (!options.databaseName) {
+      options.databaseName = this._settings.INDEXDB_DATABASE
+    }
+    if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
+      throw new Error('Option.closeDatabase must be a boolean')
+    }
+    if (typeof options.closeDatabase !== 'boolean') {
+      options.closeDatabase = this._settings.INDEXDB_CLOSE_AFTER_REQUEST
+    }
+    if (options.index && typeof options.index !== 'string') {
+      throw new Error('Option.index must be a string')
+    }
+    if (options.nameValue && (typeof options.nameValue !== 'string' && typeof options.nameValue !== 'number')) {
+      throw new Error('Option.index must be a string or number')
+    }
+    if (options.asObject && typeof options.asObject !== 'boolean') {
+      throw new Error('Options.asObject must be a boolean')
+    }
+    if (typeof options.asObject !== 'boolean') {
+      options.asObject = this._settings.AS_OBJECT
+    }
+
+    return new Promise((resolve, reject) => {
+      DatabaseUtility.getStore(options.databaseName, storeName).then(store => {
+        const dataArr = []
+
+        if (options.index && options.nameValue) {
+          const req = store.index(options.index).get(options.nameValue)
+          req.onsuccess = event => {
+            const result = event.target.result
+
+            if (result) {
+              if (new Date().getTime() > result.expires) {
+                this.delete(result.id, { storeName, databaseName: options.databaseName })
+                resolve(options.asObject ? { data: null } : null)
+              } else {
+                resolve(options.asObject ? { data: result } : result)
+              }
+            } else {
+              resolve(options.asObject ? { data: null } : null)
+            }
+          }
+
+          req.onerror = (err) => {
+            if (options.closeDatabase) {
+              DatabaseUtility.closeDB(options.databaseName)
+            }
+            reject(err)
+          }
+        } else if (!options.index && options.nameValue) {
+          const req = store.get(options.nameValue)
+          req.onsuccess = event => {
+            const result = event.target.result
+
+            if (result) {
+              if (new Date().getTime() > result.expires) {
+                this.delete(result.id, { storeName, databaseName: options.databaseName })
+                resolve(options.asObject ? { data: null } : null)
+              } else {
+                resolve(options.asObject ? { data: result } : result)
+              }
+            } else {
+              resolve(options.asObject ? { data: null } : null)
+            }
+          }
+
+          req.onerror = (err) => {
+            if (options.closeDatabase) {
+              DatabaseUtility.closeDB(options.databaseName)
+            }
+            reject(err)
+          }
+        } else {
+          let req
+          if (options.index) {
+            console.log(options.index)
+            req = store.index(options.index).openCursor()
+          } else {
+            req = store.openCursor()
+          }
+
+          req.onsuccess = event => {
+            const cursor = event.target.result
+            if (cursor) {
+              if (!('expires' in cursor.value) || !cursor.value.expires) {
+                console.info("ScStorage read an invalid item without expire from the store '" + storeName + `' in ${options.databaseName}. Please delete it.`)
+                dataArr.push(cursor.value)
+              } else {
+                if (new Date().getTime() > cursor.value.expires) {
+                  this.delete(cursor.value.id, { storeName, databaseName: options.databaseName })
+                } else {
+                  dataArr.push(cursor.value)
+                }
+              }
+              cursor.continue()
+            } else {
+              if (options.closeDatabase) {
+                DatabaseUtility.closeDB(options.databaseName)
+              }
+              resolve(options.asObject ? { data: dataArr } : dataArr)
+            }
+          }
+
+          req.onerror = (err) => {
+            if (options.closeDatabase) {
+              DatabaseUtility.closeDB(options.databaseName)
+            }
+            reject(err)
+          }
+        }
+      }).catch(error => {
+        if (options.closeDatabase) {
+          DatabaseUtility.closeDB(options.databaseName)
+        }
+        reject(error)
+      })
+    })
+  }
+
+  /**
+   * Read a value from indexDB.
+   * @param {Number} id
+   * @param {Object} options
+   * @param {String} options.storeName
+   * @param {String} [options.databaseName]
+   * @param {Number} [options.index]
+   * @param {Boolean} [options.closeDatabase]
+   * @param { Boolean= } [options.asObject] = false
+   */
+  delete (id, options = { storeName: '', databaseName: this._settings.INDEXDB_DATABASE }) {
+    console.log(id)
   }
 }
 
@@ -238,7 +407,7 @@ class DatabaseUtility {
 
     indexes = [
       {
-        indexName: 'idIndex',
+        indexName: 'id',
         indexKey: 'id',
         indexOptions: { unqiue: true, multiEntry: false }
       },
