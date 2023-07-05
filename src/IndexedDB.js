@@ -11,7 +11,7 @@ export default class IndexedDBUtility {
    * @param {String} storeName
    * @param {Object} data
    * @param {Object} [options]
-   * @param {String} [options.databaseName]
+   * @param {String} [options.database]
    * @param {Date | Number} [options.expires]
    * @param {Array} [options.indexes] Only relevant for creating the store
    * @param {Boolean} [options.update]
@@ -30,8 +30,8 @@ export default class IndexedDBUtility {
     validateDataWrite(data, options)
 
     return new Promise((resolve, reject) => {
-      DatabaseUtility.createStore(options.databaseName, storeName, options.indexes).then(_ => {
-        DatabaseUtility.getStore(options.databaseName, storeName).then(store => {
+      DatabaseUtility.createStore(options.database, storeName, options.indexes).then(_ => {
+        DatabaseUtility.getStore(options.database, storeName).then(store => {
           if (options.update) {
             updateDataInStore(store, data, options).then(resolve).catch(reject)
           } else {
@@ -46,9 +46,10 @@ export default class IndexedDBUtility {
    * Read a value from IndexedDB.
    * @param {String} storeName
    * @param {Object} [options]
-   * @param {String} [options.databaseName]
+   * @param {String} [options.database]
    * @param {String} [options.index]
    * @param {String | Number} [options.nameValue]
+   * @param { Number } [options.id]
    * @param {Boolean} [options.closeDatabase]
    * @param {Boolean} [options.asObject] = false
    */
@@ -61,12 +62,12 @@ export default class IndexedDBUtility {
     options = validateOptionsRead(options, this._settings)
 
     return new Promise((resolve, reject) => {
-      DatabaseUtility.openDB(options.databaseName, {}).then(_ => {
-        DatabaseUtility.getStore(options.databaseName, storeName).then(store => {
+      DatabaseUtility.openDB(options.database, {}).then(_ => {
+        DatabaseUtility.getStore(options.database, storeName).then(store => {
           if (options.index && options.nameValue) {
             readDataByIndexAndNameValue(store, storeName, options, this.delete, this._settings).then(resolve).catch(reject)
-          } else if (!options.index && options.nameValue) {
-            readDataByNameValue(store, storeName, options, this.delete, this._settings).then(resolve).catch(reject)
+          } else if (options.id) {
+            readDataByID(store, storeName, options, this.delete, this._settings).then(resolve).catch(reject)
           } else {
             readAllData(store, storeName, options, this.delete, this._settings).then(resolve).catch(reject)
           }
@@ -79,7 +80,7 @@ export default class IndexedDBUtility {
    * Read a value from IndexedDB.
    * @param {String} storeName
    * @param {Object} [options]
-   * @param {String} [options.databaseName]
+   * @param {String} [options.database]
    * @param {String} [options.index]
    * @param {String | Number} [options.nameValue]
    * @param {Boolean} [options.closeDatabase]
@@ -109,7 +110,7 @@ export default class IndexedDBUtility {
    * @param {Object} options
    * @param {String} [options.storeName]
    * @param {'data'|'database'|'store'} [options.type] = 'data'
-   * @param {String} [options.databaseName]
+   * @param {String} [options.database]
    * @param {Boolean} [options.closeDatabase]
    * @param [settings]
    */
@@ -256,7 +257,7 @@ class DatabaseUtility {
  * @param {Object} data
  * @param {Object} [options]
  * @param settings
- * @param {String} [options.databaseName]
+ * @param {String} [options.database]
  * @param {Date | Number} [options.expires]
  * @param {Array} [options.indexes] Only relevant for creating the database
  * @param {Boolean} [options.update]
@@ -278,11 +279,11 @@ function validateOptionsWrite (data, options, settings) {
   if (typeof options.update !== 'boolean') {
     options.update = false
   }
-  if (options.databaseName && typeof options.databaseName !== 'string') {
-    throw new Error('Option.databaseName must be a string')
+  if (options.database && typeof options.database !== 'string') {
+    throw new Error('Option.database must be a string')
   }
-  if (!options.databaseName) {
-    options.databaseName = settings.INDEXEDDB_DATABASE
+  if (!options.database) {
+    options.database = settings.INDEXEDDB_DATABASE
   }
   if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
     throw new Error('Option.closeDatabase must be a boolean')
@@ -329,7 +330,7 @@ function updateDataInStore (store, data, options) {
 
     idQuery.onerror = function () {
       if (options.closeDatabase) {
-        DatabaseUtility.closeDB(options.databaseName)
+        DatabaseUtility.closeDB(options.database)
       }
       reject(new Error('Unable to update data in store'))
     }
@@ -340,18 +341,18 @@ function updateDataInStore (store, data, options) {
 
         req.onsuccess = event => {
           if (options.closeDatabase) {
-            DatabaseUtility.closeDB(options.databaseName)
+            DatabaseUtility.closeDB(options.database)
           }
           resolve(true)
         }
         req.onerror = () => {
           if (options.closeDatabase) {
-            DatabaseUtility.closeDB(options.databaseName)
+            DatabaseUtility.closeDB(options.database)
           }
           reject(new Error('Unable to update data in store'))
         }
       } else {
-        reject(new Error(`Error while updating data in ${options.databaseName}. Id ${data.id} not found.`))
+        reject(new Error(`Error while updating data in ${options.database}. Id ${data.id} not found.`))
       }
     }
   })
@@ -367,13 +368,13 @@ function createDataInStore (store, data, options) {
 
     req.onsuccess = event => {
       if (options.closeDatabase) {
-        DatabaseUtility.closeDB(options.databaseName)
+        DatabaseUtility.closeDB(options.database)
       }
       resolve(true)
     }
     req.onerror = () => {
       if (options.closeDatabase) {
-        DatabaseUtility.closeDB(options.databaseName)
+        DatabaseUtility.closeDB(options.database)
       }
       reject(new Error('Unable to add data to store'))
     }
@@ -381,11 +382,14 @@ function createDataInStore (store, data, options) {
 }
 
 function validateOptionsRead (options, settings) {
-  if (options.databaseName && typeof options.databaseName !== 'string') {
-    throw new Error('Option.databaseName must be a string')
+  if (options.database && typeof options.database !== 'string') {
+    throw new Error('Option.database must be a string')
   }
-  if (!options.databaseName) {
-    options.databaseName = settings.INDEXEDDB_DATABASE
+  if (!options.database) {
+    options.database = settings.INDEXEDDB_DATABASE
+  }
+  if (options.id && typeof options.id !== 'number') {
+    throw new Error('Option.closeDatabase must be a number')
   }
   if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
     throw new Error('Option.closeDatabase must be a boolean')
@@ -420,7 +424,7 @@ function readDataByIndexAndNameValue (store, storeName, options, deleteMethod, s
 
       if (result) {
         if (new Date().getTime() > result.expires) {
-          deleteMethod(result.id, { storeName, databaseName: options.databaseName }, settings).then(_ => {
+          deleteMethod(result.id, { storeName, databaseName: options.database }, settings).then(_ => {
             resolve(options.asObject ? { data: null } : null)
           }).catch(_ => {
             resolve(options.asObject ? { data: null } : null)
@@ -435,16 +439,16 @@ function readDataByIndexAndNameValue (store, storeName, options, deleteMethod, s
 
     req.onerror = (err) => {
       if (options.closeDatabase) {
-        DatabaseUtility.closeDB(options.databaseName)
+        DatabaseUtility.closeDB(options.database)
       }
       reject(err)
     }
   })
 }
 
-function readDataByNameValue (store, storeName, options, deleteMethod, settings) {
+function readDataByID (store, storeName, options, deleteMethod, settings) {
   return new Promise((resolve, reject) => {
-    const req = store.get(options.nameValue)
+    const req = store.get(options.id)
     req.onsuccess = event => {
       const result = event.target.result
 
@@ -452,7 +456,7 @@ function readDataByNameValue (store, storeName, options, deleteMethod, settings)
         if (new Date().getTime() > result.expires) {
           deleteMethod(result.id, {
             storeName,
-            databaseName: options.databaseName
+            databaseName: options.database
           }, settings)
           resolve(options.asObject ? { data: null } : null)
         } else {
@@ -465,7 +469,7 @@ function readDataByNameValue (store, storeName, options, deleteMethod, settings)
 
     req.onerror = (err) => {
       if (options.closeDatabase) {
-        DatabaseUtility.closeDB(options.databaseName)
+        DatabaseUtility.closeDB(options.database)
       }
       reject(err)
     }
@@ -487,11 +491,11 @@ function readAllData (store, storeName, options, deleteMethod, settings) {
       const cursor = event.target.result
       if (cursor) {
         if (!('expires' in cursor.value) || !cursor.value.expires) {
-          console.info("ScStorage read an invalid item without expire from the store '" + storeName + `' in ${options.databaseName}. Please delete it.`)
+          console.info("ScStorage read an invalid item without expire from the store '" + storeName + `' in ${options.database}. Please delete it.`)
           dataArr.push(cursor.value)
         } else {
           if (new Date().getTime() > cursor.value.expires) {
-            deleteMethod(cursor.value.id, { storeName, databaseName: options.databaseName }, settings)
+            deleteMethod(cursor.value.id, { storeName, databaseName: options.database }, settings)
           } else {
             dataArr.push(cursor.value)
           }
@@ -499,7 +503,7 @@ function readAllData (store, storeName, options, deleteMethod, settings) {
         cursor.continue()
       } else {
         if (options.closeDatabase) {
-          DatabaseUtility.closeDB(options.databaseName)
+          DatabaseUtility.closeDB(options.database)
         }
         resolve(options.asObject ? { data: dataArr } : dataArr)
       }
@@ -521,11 +525,11 @@ function validateDeleteOptions (options, settings) {
     throw new Error('Option.type must be "database", "data" or "store"')
   }
 
-  if (options.databaseName && typeof options.databaseName !== 'string') {
-    throw new Error('Option.databaseName must be a string')
+  if (options.database && typeof options.database !== 'string') {
+    throw new Error('Option.database must be a string')
   }
-  if (!options.databaseName) {
-    options.databaseName = settings.INDEXEDDB_DATABASE
+  if (!options.database) {
+    options.database = settings.INDEXEDDB_DATABASE
   }
   if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
     throw new Error('Option.closeDatabase must be a boolean')
@@ -549,14 +553,14 @@ function deleteDatabase (key) {
 
 function deleteData (key, options) {
   return new Promise((resolve, reject) => {
-    if (!options.databaseName) {
-      throw new Error('Option.databaseName is required')
+    if (!options.database) {
+      throw new Error('Option.database is required')
     }
     if (!options.storeName) {
       throw new Error('Option.storeName is required')
     }
-    DatabaseUtility.openDB(options.databaseName, {}).then(_ => {
-      DatabaseUtility.getStore(options.databaseName, options.storeName).then(store => {
+    DatabaseUtility.openDB(options.database, {}).then(_ => {
+      DatabaseUtility.getStore(options.database, options.storeName).then(store => {
         if (store) {
           store.delete(key)
 
@@ -569,11 +573,11 @@ function deleteData (key, options) {
 
 function deleteStore (key, options) {
   return new Promise((resolve, reject) => {
-    if (!options.databaseName) {
-      throw new Error('Option.databaseName is required')
+    if (!options.database) {
+      throw new Error('Option.database is required')
     }
     DatabaseUtility.closeDB(key).then(_ => {
-      DatabaseUtility.openDB(options.databaseName, {
+      DatabaseUtility.openDB(options.database, {
         onupgradeneeded: event => {
           const db = event.target.result
 
@@ -583,7 +587,7 @@ function deleteStore (key, options) {
         }
       }).then(_ => {
         if (options.closeDatabase) {
-          DatabaseUtility.closeDB(options.databaseName)
+          DatabaseUtility.closeDB(options.database)
         }
       })
     })
@@ -593,7 +597,7 @@ function deleteStore (key, options) {
 
 function rejectError (options, reject, error) {
   if (options.closeDatabase) {
-    DatabaseUtility.closeDB(options.databaseName)
+    DatabaseUtility.closeDB(options.database)
   }
   reject(error)
 }

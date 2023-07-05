@@ -67,9 +67,10 @@ export default class ScStorage {
    * @param {Object} [options]
    * @param {StorageType} [options.storageType]
    *
-   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {String} [options.database] Only relevant if storageType is 'IndexedDB'.
    * @param {String} [options.index] Only relevant if storageType is 'IndexedDB'.
    * @param {String | Number} [options.nameValue] Only relevant if storageType is 'IndexedDB'.
+   * @param {Number} [options.id] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    *
    * @param {Boolean} [options.asObject] = false
@@ -118,7 +119,7 @@ export default class ScStorage {
    * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
    * @param {Boolean | 'none' | 'lax' | 'strict'} [options.sameSite] Only relevant if storageType is 'Cookie'.
    *
-   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {String} [options.database] Only relevant if storageType is 'IndexedDB'.
    * @param {Array} [options.indexes] Only relevant if storageType is 'IndexedDB' and for creating the store.
    * @param {Boolean} [options.update] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
@@ -159,7 +160,7 @@ export default class ScStorage {
    * @param {Object=} [options]
    * @param {StorageType=} [options.storageType]
    *
-   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {String} [options.database] Only relevant if storageType is 'IndexedDB'.
    * @param {String} [options.index] Only relevant if storageType is 'IndexedDB'.
    * @param {String | Number} [options.nameValue] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
@@ -202,7 +203,7 @@ export default class ScStorage {
    *
    * @param {String} [options.storeName] Only relevant if storageType is 'IndexedDB'.
    * @param {'data'|'database'|'store'} [options.type] = 'data' Only relevant if storageType is 'IndexedDB'.
-   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {String} [options.database] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
   async delete (key, options = {}) {

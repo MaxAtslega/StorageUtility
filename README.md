@@ -227,13 +227,13 @@ const scStorage = new ScStorage({STORAGE_TYPE: StorageType.INDEXEDDB})
 await scStorage.read("storeName", options)
 
 // Read all items in the 'todos' store
-await scStorage.read("todos", {databaseName: "TodoDatabase"})
+await scStorage.read("todos", {database: "TodoDatabase"})
 
 // Read all items with the value 'Walking' in the 'todos' store
-await scStorage.read("todos", {index: "todo", nameValue: "Walking", databaseName: "TodoDatabase"})
+await scStorage.read("todos", {index: "todo", nameValue: "Walking", database: "TodoDatabase"})
 
 // Read item with id 5 in the 'todos' store
-await scStorage.read("todos", {nameValue: 5, databaseName: "TodoDatabase"})
+await scStorage.read("todos", {id: 5, database: "TodoDatabase"})
 ```
 
 Options available:
@@ -241,9 +241,10 @@ Options available:
 | Option        | Default                              | Type                     | Description                                         |
 |---------------|--------------------------------------|--------------------------|-----------------------------------------------------|
 | storageType   | config.STORAGE_TYPE                  | StorageType (optional)   | Defines the StorageType                             |
-| databaseName  | config.INDEXEDDB_DATABASE            | String (optional)        | Defines the database name.                          |
+| database      | config.INDEXEDDB_DATABASE            | String (optional)        | Defines the database name.                          |
 | index         | -                                    | String (optional)        | Specifies the index.                                |
 | nameValue     | -                                    | String/Number (optional) | Specifies the name value.                           |
+| id            | -                                    | Number (optional)        | Specifies the id                                    |
 | closeDatabase | config.INDEXEDDB_CLOSE_AFTER_REQUEST | Boolean (optional)       | Determines whether to close the database.           |
 | asObject      | config.AS_OBJECT                     | Boolean (optional)       | Determines if the returned data should be an object |
 
@@ -255,11 +256,11 @@ await scStorage.write("todos", data, options)
 
 // Write
 const data = {todo: "Walking"}
-scStorage.write("todos", data, {expires: new Date(new Date().getTime()+100000), databaseName: "TodoDatabase"})
+scStorage.write("todos", data, {expires: new Date(new Date().getTime()+100000), database: "TodoDatabase"})
 
 // Update
 const data = {id: 5, todo: "Walking"} // Note: You have to add id in data
-scStorage.write("todos", data, {expires: new Date(new Date().getTime()+100000), databaseName: "TodoDatabase", update: true})
+scStorage.write("todos", data, {expires: new Date(new Date().getTime()+100000), database: "TodoDatabase", update: true})
 ```
 
 Note: If you run the **write** method and the database and store don't exist, they will be created automatically. You can also use the indexes option to add custom indexes.  However, please note that adding indexes is only applicable when creating a new store.
@@ -272,7 +273,7 @@ Options available:
 |---------------|--------------------------------------|------------------------|-------------------------------------------|
 | storageType   | config.STORAGE_TYPE                  | StorageType (optional) | Defines the StorageType                   |
 | expires       | config.LIFETIME                      | Date/Number (optional) | Sets the expiration time                  |
-| databaseName  | config.INDEXEDDB_DATABASE            | String (optional)      | Defines the database name.                |
+| database  | config.INDEXEDDB_DATABASE            | String (optional)      | Defines the database name.                |
 | indexes       | -                                    | Array (optional)       | Specifies the indexes for store creation. |
 | update        | -                                    | Boolean (optional)     | Determines whether to update the store.   |
 | closeDatabase | config.INDEXEDDB_CLOSE_AFTER_REQUEST | Boolean (optional)     | Determines whether to close the database. |
@@ -283,10 +284,10 @@ Options available:
 await scStorage.delete("key", options)
 
 // Delete data with id 5
-await scStorage.delete(5, {storeName: "todos", databaseName: "TodoDatabase"})
+await scStorage.delete(5, {storeName: "todos", database: "TodoDatabase"})
 
 // Delete store
-await scStorage.delete("todos", {databaseName: "TodoDatabase", type: "store"})
+await scStorage.delete("todos", {database: "TodoDatabase", type: "store"})
 
 // Delete database
 await scStorage.delete("TodoDatabase", {type: "database"})
@@ -299,7 +300,7 @@ Options available:
 | storageType   | config.STORAGE_TYPE                  | StorageType (optional)    | Defines the StorageType                  |
 | storeName     | -                                    | String (optional)         | Specifies the store name.                |
 | type          | 'data'                               | 'data'/'database'/'store' | Defines the type.                        |
-| databaseName  | config.INDEXEDDB_DATABASE            | String (optional)         | Defines the database name.               |
+| database  | config.INDEXEDDB_DATABASE            | String (optional)         | Defines the database name.               |
 | closeDatabase | config.INDEXEDDB_CLOSE_AFTER_REQUEST | Boolean (optional)        | Specifies whether to close the database. |
 #### Has
 
@@ -308,13 +309,13 @@ const scStorage = new ScStorage({STORAGE_TYPE: StorageType.INDEXEDDB})
 await scStorage.has("storeName", options)
 
 // Has items in the 'todos' store
-await scStorage.has("todos", {databaseName: "TodoDatabase"})
+await scStorage.has("todos", {database: "TodoDatabase"})
 
 // Has items with the value 'Walking' in the 'todos' store
-await scStorage.has("todos", {index: "todo", nameValue: "Walking", databaseName: "TodoDatabase"})
+await scStorage.has("todos", {index: "todo", nameValue: "Walking", database: "TodoDatabase"})
 
 // Has item with id 5 in the 'todos' store
-await scStorage.has("todos", {nameValue: 5, databaseName: "TodoDatabase"})
+await scStorage.has("todos", {nameValue: 5, database: "TodoDatabase"})
 ```
 
 Options available:
@@ -322,7 +323,7 @@ Options available:
 | Option        | Default                              | Type                     | Description                               |
 |---------------|--------------------------------------|--------------------------|-------------------------------------------|
 | storageType   | config.STORAGE_TYPE                  | StorageType (optional)   | Defines the StorageType                   |
-| databaseName  | config.INDEXEDDB_DATABASE            | String (optional)        | Defines the database name.                |
+| database  | config.INDEXEDDB_DATABASE            | String (optional)        | Defines the database name.                |
 | index         | -                                    | String (optional)        | Specifies the index.                      |
 | nameValue     | -                                    | String/Number (optional) | Specifies the name value.                 |
 | closeDatabase | config.INDEXEDDB_CLOSE_AFTER_REQUEST | Boolean (optional)       | Determines whether to close the database. |
