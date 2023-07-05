@@ -1,4 +1,4 @@
-export default class IndexDbUtility {
+export default class IndexedDBUtility {
   /**
    * @param {Object} config
    */
@@ -7,32 +7,27 @@ export default class IndexDbUtility {
   }
 
   /**
-   * Write a value to indexDB.
+   * Write a value to IndexedDB.
    * @param {String} storeName
    * @param {Object} data
    * @param {Object} [options]
    * @param {String} [options.databaseName]
    * @param {Date | Number} [options.expires]
-   * @param {Array} [options.indexes] Only relevant for creating the database
+   * @param {Array} [options.indexes] Only relevant for creating the store
    * @param {Boolean} [options.update]
    * @param {Boolean} [options.closeDatabase]
    */
   write (storeName, data = {}, options = {
-    databaseName: this._settings.INDEXDB_DATABASE,
-    closeDatabase: this._settings.INDEXDB_CLOSE_AFTER_REQUEST,
+    databaseName: this._settings.INDEXEDDB_DATABASE,
+    closeDatabase: this._settings.INDEXEDDB_CLOSE_AFTER_REQUEST,
     expires: new Date(Date.now() + this._settings.LIFETIME),
-    update: false,
-    indexes: {}
+    update: false
   }) {
-    if (!('indexedDB' in window)) {
-      throw new Error("This browser doesn't support IndexedDB.")
-    }
-    if (typeof storeName !== 'string') {
-      throw new Error('storeName must be a string')
-    }
+    if (!('indexedDB' in window)) { throw new Error("This browser doesn't support IndexedDB.") }
+    if (typeof storeName !== 'string') { throw new Error('storeName must be a string') }
 
     options = validateOptionsWrite(data, options, this._settings)
-    validateDataWrite(data, options, this._settings)
+    validateDataWrite(data, options)
 
     return new Promise((resolve, reject) => {
       DatabaseUtility.createStore(options.databaseName, storeName, options.indexes).then(_ => {
@@ -48,7 +43,7 @@ export default class IndexDbUtility {
   }
 
   /**
-   * Read a value from indexDB.
+   * Read a value from IndexedDB.
    * @param {String} storeName
    * @param {Object} [options]
    * @param {String} [options.databaseName]
@@ -58,50 +53,70 @@ export default class IndexDbUtility {
    * @param {Boolean} [options.asObject] = false
    */
   read (storeName, options = {
-    databaseName: this._settings.INDEXDB_DATABASE,
-    closeDatabase: this._settings.INDEXDB_CLOSE_AFTER_REQUEST
+    databaseName: this._settings.INDEXEDDB_DATABASE,
+    closeDatabase: this._settings.INDEXEDDB_CLOSE_AFTER_REQUEST
   }) {
-    if (!('indexedDB' in window)) {
-      throw new Error("This browser doesn't support IndexedDB.")
-    }
-    if (typeof storeName !== 'string') {
-      throw new Error('storeName must be a boolean')
-    }
-
+    if (!('indexedDB' in window)) { throw new Error("This browser doesn't support IndexedDB.") }
+    if (typeof storeName !== 'string') { throw new Error('storeName must be a string') }
     options = validateOptionsRead(options, this._settings)
 
     return new Promise((resolve, reject) => {
       DatabaseUtility.openDB(options.databaseName, {}).then(_ => {
         DatabaseUtility.getStore(options.databaseName, storeName).then(store => {
           if (options.index && options.nameValue) {
-            readDataByIndexAndNameValue(store, storeName, options).then(resolve).catch(reject)
+            readDataByIndexAndNameValue(store, storeName, options, this.delete, this._settings).then(resolve).catch(reject)
           } else if (!options.index && options.nameValue) {
-            readDataByNameValue(store, storeName, options).then(resolve).catch(reject)
+            readDataByNameValue(store, storeName, options, this.delete, this._settings).then(resolve).catch(reject)
           } else {
-            readAllData(store, storeName, options).then(resolve).catch(reject)
+            readAllData(store, storeName, options, this.delete, this._settings).then(resolve).catch(reject)
           }
         }).catch(error => rejectError(options, reject, error))
-      })
+      }).catch(error => rejectError(options, reject, error))
     })
   }
 
   /**
-   * Read a value from indexDB.
+   * Read a value from IndexedDB.
+   * @param {String} storeName
+   * @param {Object} [options]
+   * @param {String} [options.databaseName]
+   * @param {String} [options.index]
+   * @param {String | Number} [options.nameValue]
+   * @param {Boolean} [options.closeDatabase]
+   * @param {Boolean} [options.asObject] = false
+   */
+  has (storeName, options = {
+    databaseName: this._settings.INDEXEDDB_DATABASE,
+    closeDatabase: this._settings.INDEXEDDB_CLOSE_AFTER_REQUEST
+  }) {
+    if (!('indexedDB' in window)) { throw new Error("This browser doesn't support IndexedDB.") }
+    if (typeof storeName !== 'string') { throw new Error('storeName must be a string') }
+
+    return this.read(storeName, options).then(data => {
+      if (!data) {
+        return false
+      } else {
+        return !(Array.isArray(data) && data.length === 0)
+      }
+    }).catch((error) => {
+      throw error
+    })
+  }
+
+  /**
+   * Read a value from IndexedDB.
    * @param {Number|String} key
    * @param {Object} options
    * @param {String} [options.storeName]
    * @param {'data'|'database'|'store'} [options.type] = 'data'
    * @param {String} [options.databaseName]
    * @param {Boolean} [options.closeDatabase]
+   * @param [settings]
    */
-  delete (key, options) {
-    if (!('indexedDB' in window)) {
-      throw new Error("This browser doesn't support IndexedDB.")
-    }
-    if (typeof key !== 'string' && typeof key !== 'number') {
-      throw new Error('Key must be a string or number')
-    }
-    options = validateDeleteOptions(options, this._settings)
+  delete (key, options, settings) {
+    if (!('indexedDB' in window)) { throw new Error("This browser doesn't support IndexedDB.") }
+    if (typeof key !== 'string' && typeof key !== 'number') { throw new Error('Key must be a string or number') }
+    options = validateDeleteOptions(options, settings || this._settings)
 
     return new Promise((resolve, reject) => {
       if (options.type === 'database') {
@@ -240,6 +255,7 @@ class DatabaseUtility {
 /**
  * @param {Object} data
  * @param {Object} [options]
+ * @param settings
  * @param {String} [options.databaseName]
  * @param {Date | Number} [options.expires]
  * @param {Array} [options.indexes] Only relevant for creating the database
@@ -266,13 +282,13 @@ function validateOptionsWrite (data, options, settings) {
     throw new Error('Option.databaseName must be a string')
   }
   if (!options.databaseName) {
-    options.databaseName = settings.INDEXDB_DATABASE
+    options.databaseName = settings.INDEXEDDB_DATABASE
   }
   if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
     throw new Error('Option.closeDatabase must be a boolean')
   }
   if (typeof options.closeDatabase !== 'boolean') {
-    options.closeDatabase = settings.INDEXDB_CLOSE_AFTER_REQUEST
+    options.closeDatabase = settings.INDEXEDDB_CLOSE_AFTER_REQUEST
   }
   if (options.update && (!('id' in data) || typeof data.id !== 'number')) {
     throw new Error('In order to update the data, you have to provide an id as number in your data object.')
@@ -369,13 +385,13 @@ function validateOptionsRead (options, settings) {
     throw new Error('Option.databaseName must be a string')
   }
   if (!options.databaseName) {
-    options.databaseName = settings.INDEXDB_DATABASE
+    options.databaseName = settings.INDEXEDDB_DATABASE
   }
   if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
     throw new Error('Option.closeDatabase must be a boolean')
   }
   if (typeof options.closeDatabase !== 'boolean') {
-    options.closeDatabase = settings.INDEXDB_CLOSE_AFTER_REQUEST
+    options.closeDatabase = settings.INDEXEDDB_CLOSE_AFTER_REQUEST
   }
   if (options.index && typeof options.index !== 'string') {
     throw new Error('Option.index must be a string')
@@ -396,7 +412,7 @@ function validateOptionsRead (options, settings) {
   return options
 }
 
-function readDataByIndexAndNameValue (store, storeName, options) {
+function readDataByIndexAndNameValue (store, storeName, options, deleteMethod, settings) {
   return new Promise((resolve, reject) => {
     const req = store.index(options.index).get(options.nameValue)
     req.onsuccess = event => {
@@ -404,7 +420,7 @@ function readDataByIndexAndNameValue (store, storeName, options) {
 
       if (result) {
         if (new Date().getTime() > result.expires) {
-          this.delete(result.id, { storeName, databaseName: options.databaseName }).then(_ => {
+          deleteMethod(result.id, { storeName, databaseName: options.databaseName }, settings).then(_ => {
             resolve(options.asObject ? { data: null } : null)
           }).catch(_ => {
             resolve(options.asObject ? { data: null } : null)
@@ -426,7 +442,7 @@ function readDataByIndexAndNameValue (store, storeName, options) {
   })
 }
 
-function readDataByNameValue (store, storeName, options) {
+function readDataByNameValue (store, storeName, options, deleteMethod, settings) {
   return new Promise((resolve, reject) => {
     const req = store.get(options.nameValue)
     req.onsuccess = event => {
@@ -434,10 +450,10 @@ function readDataByNameValue (store, storeName, options) {
 
       if (result) {
         if (new Date().getTime() > result.expires) {
-          this.delete(result.id, {
+          deleteMethod(result.id, {
             storeName,
             databaseName: options.databaseName
-          })
+          }, settings)
           resolve(options.asObject ? { data: null } : null)
         } else {
           resolve(options.asObject ? { data: result } : result)
@@ -455,7 +471,7 @@ function readDataByNameValue (store, storeName, options) {
     }
   })
 }
-function readAllData (store, storeName, options) {
+function readAllData (store, storeName, options, deleteMethod, settings) {
   return new Promise((resolve, reject) => {
     const dataArr = []
 
@@ -475,7 +491,7 @@ function readAllData (store, storeName, options) {
           dataArr.push(cursor.value)
         } else {
           if (new Date().getTime() > cursor.value.expires) {
-            this.delete(cursor.value.id, { storeName, databaseName: options.databaseName })
+            deleteMethod(cursor.value.id, { storeName, databaseName: options.databaseName }, settings)
           } else {
             dataArr.push(cursor.value)
           }
@@ -509,13 +525,13 @@ function validateDeleteOptions (options, settings) {
     throw new Error('Option.databaseName must be a string')
   }
   if (!options.databaseName) {
-    options.databaseName = settings.INDEXDB_DATABASE
+    options.databaseName = settings.INDEXEDDB_DATABASE
   }
   if (options.closeDatabase && typeof options.closeDatabase !== 'boolean') {
     throw new Error('Option.closeDatabase must be a boolean')
   }
   if (typeof options.closeDatabase !== 'boolean') {
-    options.closeDatabase = settings.INDEXDB_CLOSE_AFTER_REQUEST
+    options.closeDatabase = settings.INDEXEDDB_CLOSE_AFTER_REQUEST
   }
 
   return options

@@ -1,4 +1,4 @@
-import IndexDbUtility from './IndexDB.js'
+import IndexedDbUtility from './IndexedDB.js'
 
 /**
  * @enum {StorageType}
@@ -6,7 +6,8 @@ import IndexDbUtility from './IndexDB.js'
 export const StorageType = {
   COOKIE: 'Cookie',
   LOCAL_STORAGE: 'LocalStorage',
-  SESSION_STORAGE: 'SessionStorage'
+  SESSION_STORAGE: 'SessionStorage',
+  INDEXEDDB: 'IndexedDB'
 }
 
 /**
@@ -17,9 +18,9 @@ const DEFAULT = {
   LIFETIME: 86400000,
   AS_OBJECT: false,
 
-  INDEXDB_ENABLE: false,
-  INDEXDB_CLOSE_AFTER_REQUEST: true,
-  INDEXDB_DATABASE: 'default'
+  INDEXEDDB_ENABLE: false,
+  INDEXEDDB_CLOSE_AFTER_REQUEST: true,
+  INDEXEDDB_DATABASE: 'default'
 
 }
 
@@ -54,21 +55,26 @@ export default class ScStorage {
     this._sessionStorageUtility = new SessionStorageUtility(this._settings)
     this._cookieUtility = new CookieUtility(this._settings)
 
-    if (this._settings.INDEXDB_ENABLE) {
-      this.indexDbUtility = new IndexDbUtility(this._settings)
+    if (this._settings.INDEXEDDB_ENABLE || this._settings.STORAGE_TYPE === StorageType.INDEXEDDB) {
+      this._indexedDbUtility = new IndexedDbUtility(this._settings)
     }
   }
 
   /**
-   * Method to read data from a specified type of web storage.
+   * Method to read data from a specified type of storage.
    *
    * @param {String} key
-   * @param {Object=} [options]
-   * @param {StorageType=} [options.storageType]
-   * @param {Boolean=} [options.asObject]
-   * @returns {Object}
+   * @param {Object} [options]
+   * @param {StorageType} [options.storageType]
+   *
+   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {String} [options.index] Only relevant if storageType is 'IndexedDB'.
+   * @param {String | Number} [options.nameValue] Only relevant if storageType is 'IndexedDB'.
+   * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
+   *
+   * @param {Boolean} [options.asObject] = false
    */
-  read (key, options = {}) {
+  async read (key, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -86,13 +92,19 @@ export default class ScStorage {
         return this._sessionStorageUtility.read(key, options)
       case StorageType.COOKIE:
         return this._cookieUtility.read(key, options)
+      case StorageType.INDEXEDDB:
+        return await this._indexedDbUtility.read(key, options).then((data) => {
+          return data
+        }).catch((error) => {
+          throw error
+        })
       default:
         return null
     }
   }
 
   /**
-   * Method to write data into a specified type of web storage.
+   * Method to write data into a specified type of storage.
    *
    * @param {String} key
    * @param {*} data
@@ -105,9 +117,13 @@ export default class ScStorage {
    * @param {Boolean=} [options.secure] Only relevant if storageType is 'Cookie'.
    * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
    * @param {Boolean | 'none' | 'lax' | 'strict'} [options.sameSite] Only relevant if storageType is 'Cookie'.
-   * @returns {boolean}
+   *
+   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {Array} [options.indexes] Only relevant if storageType is 'IndexedDB' and for creating the store.
+   * @param {Boolean} [options.update] Only relevant if storageType is 'IndexedDB'.
+   * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
-  write (key, data, options = {}) {
+  async write (key, data, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -125,20 +141,30 @@ export default class ScStorage {
         return this._sessionStorageUtility.write(key, data, options)
       case StorageType.COOKIE:
         return this._cookieUtility.write(key, data, options)
+      case StorageType.INDEXEDDB:
+        return await this._indexedDbUtility.write(key, data, options).then((data) => {
+          return data
+        }).catch((error) => {
+          throw error
+        })
       default:
         return false
     }
   }
 
   /**
-   * Method to check if a key exists in a specified type of web storage.
+   * Method to check if a key exists in a specified type of storage.
    *
    * @param {String} key
    * @param {Object=} [options]
    * @param {StorageType=} [options.storageType]
-   * @returns {Boolean}
+   *
+   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {String} [options.index] Only relevant if storageType is 'IndexedDB'.
+   * @param {String | Number} [options.nameValue] Only relevant if storageType is 'IndexedDB'.
+   * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
-  has (key, options = {}) {
+  async has (key, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -156,20 +182,30 @@ export default class ScStorage {
         return this._sessionStorageUtility.has(key)
       case StorageType.COOKIE:
         return this._cookieUtility.has(key)
+      case StorageType.INDEXEDDB:
+        return await this._indexedDbUtility.write(key, options).then((data) => {
+          return data
+        }).catch((error) => {
+          throw error
+        })
       default:
         return false
     }
   }
 
   /**
-   * Method to delete a key from a specified type of web storage.
+   * Method to delete a key from a specified type of storage.
    *
    * @param {String} key
    * @param {Object=} [options]
    * @param {StorageType=} [options.storageType]
-   * @returns {Boolean}
+   *
+   * @param {String} [options.storeName] Only relevant if storageType is 'IndexedDB'.
+   * @param {'data'|'database'|'store'} [options.type] = 'data' Only relevant if storageType is 'IndexedDB'.
+   * @param {String} [options.databaseName] Only relevant if storageType is 'IndexedDB'.
+   * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
-  delete (key, options = {}) {
+  async delete (key, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -187,6 +223,12 @@ export default class ScStorage {
         return this._sessionStorageUtility.delete(key)
       case StorageType.COOKIE:
         return this._cookieUtility.delete(key)
+      case StorageType.INDEXEDDB:
+        return await this._indexedDbUtility.delete(key, options).then((data) => {
+          return data
+        }).catch((error) => {
+          throw error
+        })
       default:
         return false
     }
