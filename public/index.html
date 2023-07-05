@@ -12,22 +12,13 @@
 <script type="module">
     import ScStorage, { StorageType, IndexDbUtility } from '/app/index.js';
 
-    const options = {
-      STORAGE_TYPE: StorageType.INDEXEDDB
-    }
+    const options = { STORAGE_TYPE: StorageType.INDEXEDDB }
     const scStorage = new ScStorage(options)
+
     scStorage.write("todos", {todo: "Gassie gehen" }, {expires: new Date(new Date().getTime()+10000), databaseName: "TodoDatabase"})
     const data = await scStorage.read("todos", {asObject: true, databaseName: "TodoDatabase"})
-    const data1 = await scStorage.read("todos", {asObject: true, index: "todo", nameValue: "Gassie gehen", databaseName: "TodoDatabase"})
     console.log(data)
-    console.log(data1)
-    /*console.log(await index.write("todos", {todo: "Gassie gehen" }, {indexes: [
-    {
-      indexName: 'todo',
-      indexKey: 'todo',
-      indexOptions: { unqiue: false, multiEntry: true }
-    }], update: false, closeDatabase: false, databaseName: "TodoDatabase", expires: 100000},
-    ))*/
+
 </script>
 </body>
 </html>

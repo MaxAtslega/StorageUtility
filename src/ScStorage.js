@@ -465,7 +465,7 @@ class CookieUtility {
       return false
     }
 
-    this._validateOptions(options)
+    validateOptions(options)
 
     if (options.expires && typeof options.expires === 'number') {
       options.expires = new Date(Date.now() + options.expires)
@@ -477,7 +477,7 @@ class CookieUtility {
     }
     options.storageType = null
 
-    const stringifiesOptions = this._stringifyOptions(options)
+    const stringifiesOptions = stringifyOptions(options)
 
     let createdAt = new Date().getTime()
     const item = this.read(key, { asObject: true })
@@ -492,52 +492,6 @@ class CookieUtility {
     document.cookie = key + '=' + encodeURIComponent(data)
       .replace(/%(2[346BF]|3[AC-F]|40|5[BDE]|60|7[BCD])/g, decodeURIComponent) + stringifiesOptions
     return true
-  }
-
-  /**
-   * @private
-   * @param {{Object}} options
-   * @param {Date|Number|String=} [options.expires]
-   * @param {String=} [options.path] Only relevant if storageType is 'Cookie'.
-   * @param {Number=} [options.maxAge] Only relevant if storageType is 'Cookie'.
-   * @param {String=} [options.domain] Only relevant if storageType is 'Cookie'.
-   * @param {Boolean=} [options.secure] Only relevant if storageType is 'Cookie'.
-   * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
-   * @param {(Boolean | 'none' | 'lax' | 'strict')=} [options.sameSite] Only relevant if storageType is 'Cookie'.
-   */
-  _validateOptions (options) {
-    if (options.path && typeof options.path !== 'string') throw new Error('Option.path must be a string')
-    if (options.maxAge && typeof options.maxAge !== 'number') throw new Error('Option.maxAge must be a number')
-    if (options.domain && typeof options.domain !== 'number') throw new Error('Option.domain must be a number')
-    if (options.secure && typeof options.secure !== 'boolean') throw new Error('Option.secure must be a boolean')
-    if (options.httpOnly && typeof options.httpOnly !== 'boolean') throw new Error('Option.httpOnly must be a boolean')
-    if (options.sameSite && (typeof options.sameSite !== 'boolean' && options.sameSite !== 'none' &&
-        options.sameSite !== 'lax' && options.sameSite !== 'strict')) {
-      throw new Error('Option.sameSite must be "none", "strict", "lax" or a boolean')
-    }
-  }
-
-  /**
-   * @private
-   * @param {Object} options
-   * @returns {String}
-   */
-  _stringifyOptions (options) {
-    let stringifiedOptions = ''
-    for (const attributeName in options) {
-      if (!options[attributeName]) {
-        continue
-      }
-      stringifiedOptions += '; ' + attributeName
-
-      if (options[attributeName] === true) {
-        continue
-      }
-
-      // Considers RFC 6265 section 5.2
-      stringifiedOptions += '=' + options[attributeName].split(';')[0]
-    }
-    return stringifiedOptions
   }
 
   /**
@@ -604,5 +558,51 @@ class CookieUtility {
     }
     document.cookie = key + '=' + '; Max-Age=-99999999;'
     return true
+  }
+}
+
+/**
+ * @private
+ * @param {Object} options
+ * @returns {String}
+ */
+function stringifyOptions (options) {
+  let stringifiedOptions = ''
+  for (const attributeName in options) {
+    if (!options[attributeName]) {
+      continue
+    }
+    stringifiedOptions += '; ' + attributeName
+
+    if (options[attributeName] === true) {
+      continue
+    }
+
+    // Considers RFC 6265 section 5.2
+    stringifiedOptions += '=' + options[attributeName].split(';')[0]
+  }
+  return stringifiedOptions
+}
+
+/**
+ * @private
+ * @param {{Object}} options
+ * @param {Date|Number|String=} [options.expires]
+ * @param {String=} [options.path] Only relevant if storageType is 'Cookie'.
+ * @param {Number=} [options.maxAge] Only relevant if storageType is 'Cookie'.
+ * @param {String=} [options.domain] Only relevant if storageType is 'Cookie'.
+ * @param {Boolean=} [options.secure] Only relevant if storageType is 'Cookie'.
+ * @param {Boolean=} [options.httpOnly] Only relevant if storageType is 'Cookie'.
+ * @param {(Boolean | 'none' | 'lax' | 'strict')=} [options.sameSite] Only relevant if storageType is 'Cookie'.
+ */
+function validateOptions (options) {
+  if (options.path && typeof options.path !== 'string') throw new Error('Option.path must be a string')
+  if (options.maxAge && typeof options.maxAge !== 'number') throw new Error('Option.maxAge must be a number')
+  if (options.domain && typeof options.domain !== 'number') throw new Error('Option.domain must be a number')
+  if (options.secure && typeof options.secure !== 'boolean') throw new Error('Option.secure must be a boolean')
+  if (options.httpOnly && typeof options.httpOnly !== 'boolean') throw new Error('Option.httpOnly must be a boolean')
+  if (options.sameSite && (typeof options.sameSite !== 'boolean' && options.sameSite !== 'none' &&
+    options.sameSite !== 'lax' && options.sameSite !== 'strict')) {
+    throw new Error('Option.sameSite must be "none", "strict", "lax" or a boolean')
   }
 }
