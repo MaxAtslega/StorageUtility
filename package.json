@@ -8,8 +8,7 @@
   "type": "module",
   "scripts": {
     "test": "jest",
-    "serve": "node server.js",
-    "build": "ts-node -O '{ \"module\": \"commonjs\" }' build.ts"
+    "serve": "node server.js"
   },
   "devDependencies": {
     "eslint": "^8.0.1",
@@ -21,7 +20,7 @@
     "jest": "^29.5.0"
   },
   "jest": {
-    "preset": "ts-jest",
+    "preset": "jest",
     "testEnvironment": "node"
   }
 }
