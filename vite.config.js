@@ -7,7 +7,8 @@ export default defineConfig(() => {
     test: {
       browser: {
         enabled: true,
-        name: 'chrome'
+        name: 'chrome',
+        headless: true
       }
     }
   }
