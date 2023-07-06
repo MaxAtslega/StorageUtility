@@ -19,7 +19,7 @@ describe('cookies', () => {
   })
 
   it('get: asObject', async () => {
-    const scStorage = new ScStorage({ AS_OBJECT: true })
+    const scStorage = new ScStorage({ WITH_META: true })
 
     const message = await scStorage.read('message', { storageType: StorageType.COOKIE })
     expect(message?.data).eq('Hello World')

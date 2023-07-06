@@ -12,14 +12,14 @@ describe('sessionStorage', () => {
     expect(response).eq(true)
   })
   it('get', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.SESSION_STORAGE, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.SESSION_STORAGE, WITH_META: true })
 
-    const message = await scStorage.read('message', { asObject: false })
+    const message = await scStorage.read('message', { withMeta: false })
     expect(message).eq('Hello World')
   })
 
   it('get: asObject', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.SESSION_STORAGE, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.SESSION_STORAGE, WITH_META: true })
 
     const message = await scStorage.read('message')
     expect(message?.data).eq('Hello World')

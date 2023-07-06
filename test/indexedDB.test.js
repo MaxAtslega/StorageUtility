@@ -32,34 +32,34 @@ describe('cookies', () => {
     expect(response).eq(true)
   })
   it('getById', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, WITH_META: true })
 
-    const response = await scStorage.read('todos', { asObject: false, id: 1, database: 'TodoDatabase' })
+    const response = await scStorage.read('todos', { withMeta: false, id: 1, database: 'TodoDatabase' })
     expect(response.message).eq('Hello World')
 
-    const response2 = await scStorage.read('todos', { asObject: false, id: 1 })
+    const response2 = await scStorage.read('todos', { withMeta: false, id: 1 })
     expect(response2.todo).eq('Jumping')
     expect(response2.friends[0]).eq('Tom')
   })
 
   it('getAllItems', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, WITH_META: true })
 
-    const response = await scStorage.read('todos', { asObject: false })
+    const response = await scStorage.read('todos', { withMeta: false })
     expect(response[0].todo).eq('Jumping')
     expect(response[0].friends[0]).eq('Tom')
   })
 
   it('getItemsByIndexAndValue', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, WITH_META: true })
 
-    const response = await scStorage.read('todos', { asObject: true, index: 'friends', nameValue: 'Tom' })
+    const response = await scStorage.read('todos', { withMeta: true, index: 'friends', nameValue: 'Tom' })
     expect(response.data.todo).eq('Jumping')
     expect(response.data.friends[0]).eq('Tom')
   })
 
   it('hasById', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, WITH_META: true })
 
     const response = await scStorage.has('todos', { id: 1, database: 'TodoDatabase' })
     expect(response).eq(true)
@@ -69,14 +69,14 @@ describe('cookies', () => {
   })
 
   it('hasItems', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, WITH_META: true })
 
     const response = await scStorage.has('todos')
     expect(response).eq(true)
   })
 
   it('hasItemsByIndexAndValue', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.INDEXEDDB, WITH_META: true })
 
     const response = await scStorage.has('todos', { index: 'friends', nameValue: 'Tom' })
     expect(response).eq(true)

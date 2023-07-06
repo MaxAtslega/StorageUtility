@@ -16,7 +16,7 @@ export const StorageType = {
 const DEFAULT = {
   STORAGE_TYPE: StorageType.LOCAL_STORAGE,
   LIFETIME: 86400000,
-  AS_OBJECT: false,
+  WITH_META: false,
 
   INDEXEDDB_ENABLE: false,
   INDEXEDDB_CLOSE_AFTER_REQUEST: true,
@@ -49,7 +49,7 @@ export default class ScStorage {
    * @param {Object} config
    * @param {StorageType} [config.STORAGE_TYPE]
    * @param {Number} [config.LIFETIME]
-   * @param {Boolean} [config.AS_OBJECT]
+   * @param {Boolean} [config.WITH_META]
    *
    * @param {Boolean} [config.INDEXEDDB_ENABLE]
    * @param {Boolean} [config.INDEXEDDB_CLOSE_AFTER_REQUEST]
@@ -80,7 +80,7 @@ export default class ScStorage {
    * @param {Number} [options.id] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    *
-   * @param {Boolean} [options.asObject] = false
+   * @param {Boolean} [options.withMeta] = false
    */
   async read (key, options = {}) {
     if (typeof window === 'undefined') {
@@ -271,7 +271,7 @@ class LocalStorageUtility {
     }
 
     let createdAt = new Date().getTime()
-    const item = this.read(key, { asObject: true })
+    const item = this.read(key, { withMeta: true })
     if (item && 'createdAt' in item) {
       createdAt = item.createdAt
     }
@@ -288,19 +288,19 @@ class LocalStorageUtility {
    * Read a value from local storage.
    * @param {String} key
    * @param {Object=} [options]
-   * @param { Boolean= } [options.asObject] = false
+   * @param { Boolean= } [options.withMeta] = false
    */
-  read (key, options = { asObject: this._settings.AS_OBJECT }) {
-    if (options.asObject && typeof options.asObject !== 'boolean') {
-      throw new Error('Options.asObject must be a boolean')
+  read (key, options = { withMeta: this._settings.WITH_META }) {
+    if (options.withMeta && typeof options.withMeta !== 'boolean') {
+      throw new Error('options.withMeta must be a boolean')
     }
-    if (typeof options.asObject !== 'boolean') {
-      options.asObject = this._settings.AS_OBJECT
+    if (typeof options.withMeta !== 'boolean') {
+      options.withMeta = this._settings.WITH_META
     }
 
     const item = window.localStorage.getItem(key)
     if (!item) {
-      return options.asObject ? { data: null } : null
+      return options.withMeta ? { data: null } : null
     }
 
     let obj = null
@@ -308,20 +308,20 @@ class LocalStorageUtility {
       obj = JSON.parse(item)
     } catch (e) {
       console.info("ScStorage read an invalid item from the key '" + key + "' in local storage. Please delete it.")
-      return options.asObject ? { data: item } : item
+      return options.withMeta ? { data: item } : item
     }
 
     if (!('expires' in obj) || !('data' in obj)) {
       console.info("ScStorage read an invalid item from the key '" + key + "' in local storage. Please delete it.")
-      return options.asObject ? { data: obj } : obj
+      return options.withMeta ? { data: obj } : obj
     }
 
     if (new Date().getTime() > obj.expires) {
       this.delete(key)
-      return options.asObject ? { data: null } : null
+      return options.withMeta ? { data: null } : null
     }
 
-    return options.asObject ? obj : obj.data
+    return options.withMeta ? obj : obj.data
   }
 
   /**
@@ -373,7 +373,7 @@ class SessionStorageUtility {
     }
 
     let createdAt = new Date().getTime()
-    const item = this.read(key, { asObject: true })
+    const item = this.read(key, { withMeta: true })
     if (item && 'createdAt' in item) {
       createdAt = item.createdAt
     }
@@ -390,19 +390,19 @@ class SessionStorageUtility {
    * Read a value from session storage.
    * @param {String} key
    * @param {Object=} [options]
-   * @param { Boolean= } [options.asObject] = false
+   * @param { Boolean= } [options.withMeta] = false
    */
-  read (key, options = { asObject: this._settings.AS_OBJECT }) {
-    if (options.asObject && typeof options.asObject !== 'boolean') {
-      throw new Error('Options.asObject must be a boolean')
+  read (key, options = { withMeta: this._settings.WITH_META }) {
+    if (options.withMeta && typeof options.withMeta !== 'boolean') {
+      throw new Error('options.withMeta must be a boolean')
     }
-    if (typeof options.asObject !== 'boolean') {
-      options.asObject = this._settings.AS_OBJECT
+    if (typeof options.withMeta !== 'boolean') {
+      options.withMeta = this._settings.WITH_META
     }
 
     const item = window.sessionStorage.getItem(key)
     if (!item) {
-      return options.asObject ? { data: null } : null
+      return options.withMeta ? { data: null } : null
     }
 
     let obj = null
@@ -410,20 +410,20 @@ class SessionStorageUtility {
       obj = JSON.parse(item)
     } catch (e) {
       console.info("ScStorage read an invalid item from the key '" + key + "' in session storage. Please delete it.")
-      return options.asObject ? { data: item } : item
+      return options.withMeta ? { data: item } : item
     }
 
     if (!('expires' in obj) || !('data' in obj)) {
       console.info("ScStorage read an invalid item from the key '" + key + "' in session storage. Please delete it.")
-      return options.asObject ? { data: obj } : obj
+      return options.withMeta ? { data: obj } : obj
     }
 
     if (new Date().getTime() > obj.expires) {
       this.delete(key)
-      return options.asObject ? { data: null } : null
+      return options.withMeta ? { data: null } : null
     }
 
-    return options.asObject ? obj : obj.data
+    return options.withMeta ? obj : obj.data
   }
 
   /**
@@ -488,7 +488,7 @@ class CookieUtility {
     const stringifiesOptions = stringifyOptions(options)
 
     let createdAt = new Date().getTime()
-    const item = this.read(key, { asObject: true })
+    const item = this.read(key, { withMeta: true })
     if (item && 'createdAt' in item) {
       createdAt = item.createdAt
     }
@@ -506,21 +506,21 @@ class CookieUtility {
    * Read a value from cookies.
    * @param {String} key
    * @param {Object=} [options]
-   * @param { Boolean= } [options.asObject] = false
+   * @param { Boolean= } [options.withMeta] = false
    */
-  read (key, options = { asObject: this._settings.AS_OBJECT }) {
+  read (key, options = { withMeta: this._settings.WITH_META }) {
     if (!('cookie' in document)) {
       return { data: null }
     }
-    if (options.asObject && typeof options.asObject !== 'boolean') {
-      throw new Error('Options.asObject must be a boolean')
+    if (options.withMeta && typeof options.withMeta !== 'boolean') {
+      throw new Error('options.withMeta must be a boolean')
     }
-    if (typeof options.asObject !== 'boolean') {
-      options.asObject = this._settings.AS_OBJECT
+    if (typeof options.withMeta !== 'boolean') {
+      options.withMeta = this._settings.WITH_META
     }
     let item = document.cookie.match('(^|;)\\s*' + key + '\\s*=\\s*([^;]+)')?.pop() || null
     if (!item) {
-      return options.asObject ? { data: null } : null
+      return options.withMeta ? { data: null } : null
     }
 
     item = decodeURIComponent(item)
@@ -530,20 +530,20 @@ class CookieUtility {
       obj = JSON.parse(item)
     } catch (e) {
       console.info("ScStorage read an invalid item from the key '" + key + "' in cookies. Please delete it.")
-      return options.asObject ? { data: item } : item
+      return options.withMeta ? { data: item } : item
     }
 
     if (!('expires' in obj) || !('data' in obj)) {
       console.info("ScStorage read an invalid item from the key '" + key + "' in cookies. Please delete it.")
-      return options.asObject ? { data: obj } : obj
+      return options.withMeta ? { data: obj } : obj
     }
 
     if (new Date().getTime() > obj.expires) {
       this.delete(key)
-      return options.asObject ? { data: null } : null
+      return options.withMeta ? { data: null } : null
     }
 
-    return options.asObject ? obj : obj.data
+    return options.withMeta ? obj : obj.data
   }
 
   /**

@@ -12,14 +12,14 @@ describe('localStorage', () => {
     expect(response).eq(true)
   })
   it('get', async () => {
-    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.LOCAL_STORAGE, AS_OBJECT: true })
+    const scStorage = new ScStorage({ STORAGE_TYPE: StorageType.LOCAL_STORAGE, WITH_META: true })
 
-    const message = await scStorage.read('message', { asObject: false })
+    const message = await scStorage.read('message', { withMeta: false })
     expect(message).eq('Hello World')
   })
 
   it('get: asObject', async () => {
-    const scStorage = new ScStorage({ AS_OBJECT: true })
+    const scStorage = new ScStorage({ WITH_META: true })
 
     const message = await scStorage.read('message')
     expect(message?.data).eq('Hello World')

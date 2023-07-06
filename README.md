@@ -31,7 +31,7 @@ default values are shown below:
 const config = {
   STORAGE_TYPE: StorageType.LOCAL_STORAGE,
   LIFETIME: 86400000,
-  AS_OBJECT: false,
+  WITH_META: false,
 
   INDEXEDDB_ENABLE: false, // Only relevant if you use the IndexedDB.
   INDEXEDDB_CLOSE_AFTER_REQUEST: true, // Only relevant if you use the IndexedDB.
@@ -62,7 +62,7 @@ Options available:
 | Option      | Default             | Type                   | Description                                         |
 |-------------|---------------------|------------------------|-----------------------------------------------------|
 | storageType | config.STORAGE_TYPE | StorageType (optional) | Defines the StorageType                             |
-| asObject    | config.AS_OBJECT    | Boolean (optional)     | Determines if the returned data should be an object |
+| withMeta    | config.WITH_META    | Boolean (optional)     | Determines if the returned data should be an object |
 
 #### Write
 
@@ -118,7 +118,7 @@ Options available:
 | Option      | Default             | Type                   | Description                                         |
 |-------------|---------------------|------------------------|-----------------------------------------------------|
 | storageType | config.STORAGE_TYPE | StorageType (optional) | Defines the StorageType                             |
-| asObject    | config.AS_OBJECT    | Boolean (optional)     | Determines if the returned data should be an object |
+| withMeta    | config.WITH_META    | Boolean (optional)     | Determines if the returned data should be an object |
 
 #### Write
 
@@ -173,7 +173,7 @@ Options available:
 | Option      | Default             | Type                   | Description                                         |
 |-------------|---------------------|------------------------|-----------------------------------------------------|
 | storageType | config.STORAGE_TYPE | StorageType (optional) | Defines the StorageType                             |
-| asObject    | config.AS_OBJECT    | Boolean (optional)     | Determines if the returned data should be an object |
+| withMeta    | config.WITH_META    | Boolean (optional)     | Determines if the returned data should be an object |
 
 #### Write
 
@@ -248,7 +248,7 @@ Options available:
 | nameValue     | -                                    | String/Number (optional) | Specifies the name value.                           |
 | id            | -                                    | Number (optional)        | Specifies the id                                    |
 | closeDatabase | config.INDEXEDDB_CLOSE_AFTER_REQUEST | Boolean (optional)       | Determines whether to close the database.           |
-| asObject      | config.AS_OBJECT                     | Boolean (optional)       | Determines if the returned data should be an object |
+| withMeta      | config.WITH_META                     | Boolean (optional)       | Determines if the returned data should be an object |
 
 #### Write
 

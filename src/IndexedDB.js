@@ -51,7 +51,7 @@ export default class IndexedDBUtility {
    * @param {String | Number} [options.nameValue]
    * @param { Number } [options.id]
    * @param {Boolean} [options.closeDatabase]
-   * @param {Boolean} [options.asObject] = false
+   * @param {Boolean} [options.withMeta] = false
    */
   read (storeName, options = {
     databaseName: this._settings.INDEXEDDB_DATABASE,
@@ -85,7 +85,7 @@ export default class IndexedDBUtility {
    * @param {Number} [options.id]
    * @param {String | Number} [options.nameValue]
    * @param {Boolean} [options.closeDatabase]
-   * @param {Boolean} [options.asObject] = false
+   * @param {Boolean} [options.withMeta] = false
    */
   has (storeName, options = {
     databaseName: this._settings.INDEXEDDB_DATABASE,
@@ -94,7 +94,7 @@ export default class IndexedDBUtility {
     if (!('indexedDB' in window)) { throw new Error("This browser doesn't support IndexedDB.") }
     if (typeof storeName !== 'string') { throw new Error('storeName must be a string') }
 
-    options.asObject = false
+    options.withMeta = false
     return this.read(storeName, options).then(data => {
       if (!data) {
         return false
@@ -405,11 +405,11 @@ function validateOptionsRead (options, settings) {
   if (options.nameValue && (typeof options.nameValue !== 'string' && typeof options.nameValue !== 'number')) {
     throw new Error('Option.nameValue must be a string or number')
   }
-  if (options.asObject && typeof options.asObject !== 'boolean') {
-    throw new Error('Options.asObject must be a boolean')
+  if (options.withMeta && typeof options.withMeta !== 'boolean') {
+    throw new Error('options.withMeta must be a boolean')
   }
-  if (typeof options.asObject !== 'boolean') {
-    options.asObject = settings.AS_OBJECT
+  if (typeof options.withMeta !== 'boolean') {
+    options.withMeta = settings.AS_OBJECT
   }
 
   return options
@@ -424,15 +424,15 @@ function readDataByIndexAndNameValue (store, storeName, options, deleteMethod, s
       if (result) {
         if (new Date().getTime() > result.expires) {
           deleteMethod(result.id, { storeName, databaseName: options.database }, settings).then(_ => {
-            resolve(options.asObject ? { data: null } : null)
+            resolve(options.withMeta ? { data: null } : null)
           }).catch(_ => {
-            resolve(options.asObject ? { data: null } : null)
+            resolve(options.withMeta ? { data: null } : null)
           })
         } else {
-          resolve(options.asObject ? { data: result } : result)
+          resolve(options.withMeta ? { data: result } : result)
         }
       } else {
-        resolve(options.asObject ? { data: null } : null)
+        resolve(options.withMeta ? { data: null } : null)
       }
     }
 
@@ -457,12 +457,12 @@ function readDataByID (store, storeName, options, deleteMethod, settings) {
             storeName,
             databaseName: options.database
           }, settings)
-          resolve(options.asObject ? { data: null } : null)
+          resolve(options.withMeta ? { data: null } : null)
         } else {
-          resolve(options.asObject ? { data: result } : result)
+          resolve(options.withMeta ? { data: result } : result)
         }
       } else {
-        resolve(options.asObject ? { data: null } : null)
+        resolve(options.withMeta ? { data: null } : null)
       }
     }
 
@@ -504,7 +504,7 @@ function readAllData (store, storeName, options, deleteMethod, settings) {
         if (options.closeDatabase) {
           DatabaseUtility.closeDB(options.database)
         }
-        resolve(options.asObject ? { data: dataArr } : dataArr)
+        resolve(options.withMeta ? { data: dataArr } : dataArr)
       }
     }
 
