@@ -47,6 +47,13 @@ class InvalidKeyException extends Error {
 export default class ScStorage {
   /**
    * @param {Object} config
+   * @param {StorageType} [config.STORAGE_TYPE]
+   * @param {Number} [config.LIFETIME]
+   * @param {Boolean} [config.AS_OBJECT]
+   *
+   * @param {Boolean} [config.INDEXEDDB_ENABLE]
+   * @param {Boolean} [config.INDEXEDDB_CLOSE_AFTER_REQUEST]
+   * @param {String} [config.INDEXEDDB_DATABASE]
    */
   constructor (config = {}) {
     this._settings = Object.assign({}, DEFAULT, config)
