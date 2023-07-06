@@ -44,6 +44,8 @@ const scStorage = new ScStorage(config)
 Four different StorageTypes are
 available:  `StorageType.LOCAL_STORAGE`, `StorageType.SESSION_STORAGE`, `StorageType.COOKIES`, `StorageType.INDEXEDDB`
 
+**See more example in test/*.js**
+
 ### LocalStorage
 
 `StorageType.LOCAL_STORAGE`
@@ -229,7 +231,7 @@ await scStorage.read("storeName", options)
 // Read all items in the 'todos' store
 await scStorage.read("todos", {database: "TodoDatabase"})
 
-// Read all items with the value 'Walking' in the 'todos' store
+// Read item with the value 'Walking' in 'todo' index in the 'todos' store
 await scStorage.read("todos", {index: "todo", nameValue: "Walking", database: "TodoDatabase"})
 
 // Read item with id 5 in the 'todos' store
@@ -273,7 +275,7 @@ Options available:
 |---------------|--------------------------------------|------------------------|-------------------------------------------|
 | storageType   | config.STORAGE_TYPE                  | StorageType (optional) | Defines the StorageType                   |
 | expires       | config.LIFETIME                      | Date/Number (optional) | Sets the expiration time                  |
-| database  | config.INDEXEDDB_DATABASE            | String (optional)      | Defines the database name.                |
+| database      | config.INDEXEDDB_DATABASE            | String (optional)      | Defines the database name.                |
 | indexes       | -                                    | Array (optional)       | Specifies the indexes for store creation. |
 | update        | -                                    | Boolean (optional)     | Determines whether to update the store.   |
 | closeDatabase | config.INDEXEDDB_CLOSE_AFTER_REQUEST | Boolean (optional)     | Determines whether to close the database. |

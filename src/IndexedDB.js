@@ -43,7 +43,7 @@ export default class IndexedDBUtility {
   }
 
   /**
-   * Read a value from IndexedDB.
+   * Read value(s) from IndexedDB.
    * @param {String} storeName
    * @param {Object} [options]
    * @param {String} [options.database]
@@ -77,11 +77,12 @@ export default class IndexedDBUtility {
   }
 
   /**
-   * Read a value from IndexedDB.
+   * Has value(s) from IndexedDB.
    * @param {String} storeName
    * @param {Object} [options]
    * @param {String} [options.database]
    * @param {String} [options.index]
+   * @param {Number} [options.id]
    * @param {String | Number} [options.nameValue]
    * @param {Boolean} [options.closeDatabase]
    * @param {Boolean} [options.asObject] = false
@@ -93,6 +94,7 @@ export default class IndexedDBUtility {
     if (!('indexedDB' in window)) { throw new Error("This browser doesn't support IndexedDB.") }
     if (typeof storeName !== 'string') { throw new Error('storeName must be a string') }
 
+    options.asObject = false
     return this.read(storeName, options).then(data => {
       if (!data) {
         return false
@@ -400,11 +402,8 @@ function validateOptionsRead (options, settings) {
   if (options.index && typeof options.index !== 'string') {
     throw new Error('Option.index must be a string')
   }
-  if (options.nameValue && (!options.index && typeof options.nameValue !== 'number')) {
-    throw new Error('Option.index must be a number')
-  }
   if (options.nameValue && (typeof options.nameValue !== 'string' && typeof options.nameValue !== 'number')) {
-    throw new Error('Option.index must be a string or number')
+    throw new Error('Option.nameValue must be a string or number')
   }
   if (options.asObject && typeof options.asObject !== 'boolean') {
     throw new Error('Options.asObject must be a boolean')
@@ -548,26 +547,29 @@ function deleteDatabase (key) {
     const dbConnect = indexedDB.deleteDatabase(key)
     dbConnect.onsuccess = resolve
     dbConnect.onerror = reject
+    resolve(true)
   })
 }
 
 function deleteData (key, options) {
   return new Promise((resolve, reject) => {
     if (!options.database) {
-      throw new Error('Option.database is required')
+      throw new Error('In order to delete data, Option.database is required')
     }
     if (!options.storeName) {
-      throw new Error('Option.storeName is required')
+      throw new Error('In order to delete data, Option.storeName is required')
+    }
+    if (typeof key !== 'number') {
+      throw new Error('In order to delete data, key must be the id as number')
     }
     DatabaseUtility.openDB(options.database, {}).then(_ => {
       DatabaseUtility.getStore(options.database, options.storeName).then(store => {
         if (store) {
           store.delete(key)
-
-          return true
+          resolve(true)
         }
       }).catch(error => rejectError(options, reject, error))
-    })
+    }).catch(error => rejectError(options, reject, error))
   })
 }
 
@@ -589,9 +591,9 @@ function deleteStore (key, options) {
         if (options.closeDatabase) {
           DatabaseUtility.closeDB(options.database)
         }
-      })
-    })
-    resolve(true)
+        resolve(true)
+      }).catch(error => rejectError(options, reject, error))
+    }).catch(error => rejectError(options, reject, error))
   })
 }
 
