@@ -1,24 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Web Component</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite App</title>
 </head>
+
 <body>
-<h1>Hello World.</h1>
-
-<script type="module">
-    import ScStorage, { StorageType, IndexDbUtility } from '/app/index.js';
-
-    const options = { STORAGE_TYPE: StorageType.INDEXEDDB }
-    const scStorage = new ScStorage(options)
-
-    scStorage.write("todos", {todo: "Gassie gehen" }, {expires: new Date(new Date().getTime()+10000), databaseName: "TodoDatabase"})
-    const data = await scStorage.read("todos", { id: 76, asObject: true, databaseName: "TodoDatabase"})
-    console.log(data)
-
-</script>
+<div id="app"></div>
+<script type="module" src="/main.js"></script>
 </body>
 </html>

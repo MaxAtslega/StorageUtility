@@ -162,6 +162,7 @@ export default class ScStorage {
    *
    * @param {String} [options.database] Only relevant if storageType is 'IndexedDB'.
    * @param {String} [options.index] Only relevant if storageType is 'IndexedDB'.
+   * @param {Number} [options.id] Only relevant if storageType is 'IndexedDB'.
    * @param {String | Number} [options.nameValue] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
@@ -184,7 +185,7 @@ export default class ScStorage {
       case StorageType.COOKIE:
         return this._cookieUtility.has(key)
       case StorageType.INDEXEDDB:
-        return await this._indexedDbUtility.write(key, options).then((data) => {
+        return await this._indexedDbUtility.has(key, options).then((data) => {
           return data
         }).catch((error) => {
           throw error
@@ -197,7 +198,7 @@ export default class ScStorage {
   /**
    * Method to delete a key from a specified type of storage.
    *
-   * @param {String} key
+   * @param {String|Number} key
    * @param {Object=} [options]
    * @param {StorageType=} [options.storageType]
    *
@@ -216,7 +217,6 @@ export default class ScStorage {
     if (!options.storageType) {
       options.storageType = this._settings.STORAGE_TYPE
     }
-
     switch (options.storageType) {
       case StorageType.LOCAL_STORAGE:
         return this._localStorageUtility.delete(key)
