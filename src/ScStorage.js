@@ -224,7 +224,7 @@ export default class ScStorage {
       case StorageType.COOKIE:
         return this._cookieUtility.delete(key)
       case StorageType.INDEXEDDB:
-        return this._indexedDbUtility
+        return this._indexedDbUtility.delete(key, options)
       default:
         return false
     }
