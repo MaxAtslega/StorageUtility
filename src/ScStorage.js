@@ -82,7 +82,7 @@ export default class ScStorage {
    *
    * @param {Boolean} [options.withMeta] = false
    */
-  async read (key, options = {}) {
+  read (key, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -101,7 +101,7 @@ export default class ScStorage {
       case StorageType.COOKIE:
         return this._cookieUtility.read(key, options)
       case StorageType.INDEXEDDB:
-        return await this._indexedDbUtility.read(key, options).then((data) => {
+        return this._indexedDbUtility.read(key, options).then((data) => {
           return data
         }).catch((error) => {
           throw error
@@ -131,7 +131,7 @@ export default class ScStorage {
    * @param {Boolean} [options.update] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
-  async write (key, data, options = {}) {
+  write (key, data, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -150,11 +150,7 @@ export default class ScStorage {
       case StorageType.COOKIE:
         return this._cookieUtility.write(key, data, options)
       case StorageType.INDEXEDDB:
-        return await this._indexedDbUtility.write(key, data, options).then((data) => {
-          return data
-        }).catch((error) => {
-          throw error
-        })
+        return this._indexedDbUtility.write(key, data, options)
       default:
         return false
     }
@@ -173,7 +169,7 @@ export default class ScStorage {
    * @param {String | Number} [options.nameValue] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
-  async has (key, options = {}) {
+  has (key, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -192,11 +188,7 @@ export default class ScStorage {
       case StorageType.COOKIE:
         return this._cookieUtility.has(key)
       case StorageType.INDEXEDDB:
-        return await this._indexedDbUtility.has(key, options).then((data) => {
-          return data
-        }).catch((error) => {
-          throw error
-        })
+        return this._indexedDbUtility.has(key, options)
       default:
         return false
     }
@@ -214,7 +206,7 @@ export default class ScStorage {
    * @param {String} [options.database] Only relevant if storageType is 'IndexedDB'.
    * @param {Boolean} [options.closeDatabase] Only relevant if storageType is 'IndexedDB'.
    */
-  async delete (key, options = {}) {
+  delete (key, options = {}) {
     if (typeof window === 'undefined') {
       return false
     }
@@ -232,11 +224,7 @@ export default class ScStorage {
       case StorageType.COOKIE:
         return this._cookieUtility.delete(key)
       case StorageType.INDEXEDDB:
-        return await this._indexedDbUtility.delete(key, options).then((data) => {
-          return data
-        }).catch((error) => {
-          throw error
-        })
+        return this._indexedDbUtility
       default:
         return false
     }
