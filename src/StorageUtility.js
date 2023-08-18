@@ -44,7 +44,7 @@ class InvalidKeyException extends Error {
   }
 }
 
-export default class ScStorage {
+export default class StorageUtility {
   /**
    * @param {Object} config
    * @param {StorageType} [config.STORAGE_TYPE]

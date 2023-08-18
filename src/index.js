@@ -1,4 +1,4 @@
-import ScStorage, { StorageType } from './ScStorage.js'
+import StorageUtility, { StorageType } from './StorageUtility.js'
 import IndexDbUtility from './IndexedDB.js'
-export default ScStorage
+export default StorageUtility
 export { StorageType, IndexDbUtility }

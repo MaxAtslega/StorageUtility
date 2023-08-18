@@ -1,6 +1,6 @@
-# ScStorage
+# StorageUtility
 
-ScStorage is a simple API that enables easy interaction with various types of browser storage such as LocalStorage,
+StorageUtility is a simple API that enables easy interaction with various types of browser storage such as LocalStorage,
 SessionStorage, Cookies, and IndexedDB.
 
 ### Understanding help
