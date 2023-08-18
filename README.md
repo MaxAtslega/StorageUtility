@@ -11,20 +11,20 @@ SessionStorage, Cookies, and IndexedDB.
 
 ## Usage
 
-### ScStorage Class
+### StorageUtility Class
 
-To utilize the ScStorage API, you must first create an instance of the ScStorage class. You can optionally provide a
+To utilize the StorageUtility API, you must first create an instance of the StorageUtility class. You can optionally provide a
 configuration object during this creation. Here's how you do it:
 
 ```javascript
-import ScStorage, {StorageType} from './src/index'
+import StorageUtility, {StorageType} from './src/index'
 
-const scStorage = new ScStorage({STORAGE_TYPE: StorageType.SESSION_STORAGE})
+const storageUtility = new StorageUtility({STORAGE_TYPE: StorageType.SESSION_STORAGE})
 ```
 
 #### Configuration
 
-You can provide a configuration object to tweak the ScStorage instance to your needs. The available options with their
+You can provide a configuration object to tweak the StorageUtility instance to your needs. The available options with their
 default values are shown below:
 
 ```javascript
@@ -38,7 +38,7 @@ const config = {
   INDEXEDDB_DATABASE: 'default' // Only relevant if you use the IndexedDB.
 }
 
-const scStorage = new ScStorage(config)
+const storageUtility = new StorageUtility(config)
 ```
 
 Four different StorageTypes are
@@ -53,8 +53,8 @@ available:  `StorageType.LOCAL_STORAGE`, `StorageType.SESSION_STORAGE`, `Storage
 #### Read
 
 ```javascript
-const scStorage = new ScStorage()
-scStorage.read("key", options)
+const storageUtility = new StorageUtility()
+storageUtility.read("key", options)
 ```
 
 Options available:
@@ -68,7 +68,7 @@ Options available:
 
 ```javascript
 const data = {message: "Hello World"}
-scStorage.write("key", data, options)
+storageUtility.write("key", data, options)
 ```
 
 Options available:
@@ -81,7 +81,7 @@ Options available:
 #### Delete
 
 ```javascript
-scStorage.delete("key", options)
+storageUtility.delete("key", options)
 ```
 
 Options available:
@@ -93,7 +93,7 @@ Options available:
 #### Has
 
 ```javascript
-scStorage.has("key", options)
+storageUtility.has("key", options)
 ```
 
 Options available:
@@ -109,8 +109,8 @@ Options available:
 #### Read
 
 ```javascript
-const scStorage = new ScStorage({STORAGE_TYPE: StorageType.SESSION_STORAGE})
-scStorage.read("key", options)
+const storageUtility = new StorageUtility({STORAGE_TYPE: StorageType.SESSION_STORAGE})
+storageUtility.read("key", options)
 ```
 
 Options available:
@@ -124,7 +124,7 @@ Options available:
 
 ```javascript
 const data = {message: "Hello World"}
-scStorage.write("key", data, options)
+storageUtility.write("key", data, options)
 ```
 
 Options available:
@@ -137,7 +137,7 @@ Options available:
 #### Delete
 
 ```javascript
-scStorage.delete("key", options)
+storageUtility.delete("key", options)
 ```
 
 Options available:
@@ -148,7 +148,7 @@ Options available:
 
 #### Has
 ```javascript
-scStorage.has("key", options)
+storageUtility.has("key", options)
 ```
 
 Options available:
@@ -164,8 +164,8 @@ Options available:
 #### Read
 
 ```javascript
-const scStorage = new ScStorage({STORAGE_TYPE: StorageType.COOKIES})
-scStorage.read("key", options)
+const storageUtility = new StorageUtility({STORAGE_TYPE: StorageType.COOKIES})
+storageUtility.read("key", options)
 ```
 
 Options available:
@@ -179,7 +179,7 @@ Options available:
 
 ```javascript
 const data = {message: "Hello World"}
-scStorage.write("key", data, options)
+storageUtility.write("key", data, options)
 ```
 
 Options available:
@@ -197,7 +197,7 @@ Options available:
 #### Delete
 
 ```javascript
-scStorage.delete("key", options)
+storageUtility.delete("key", options)
 ```
 
 Options available:
@@ -209,7 +209,7 @@ Options available:
 #### Has
 
 ```javascript
-scStorage.has("key", options)
+storageUtility.has("key", options)
 ```
 
 Options available:
@@ -225,17 +225,17 @@ Options available:
 #### Read
 
 ```javascript
-const scStorage = new ScStorage({STORAGE_TYPE: StorageType.INDEXEDDB})
-await scStorage.read("storeName", options)
+const storageUtility = new StorageUtility({STORAGE_TYPE: StorageType.INDEXEDDB})
+await storageUtility.read("storeName", options)
 
 // Read all items in the 'todos' store
-await scStorage.read("todos", {database: "TodoDatabase"})
+await storageUtility.read("todos", {database: "TodoDatabase"})
 
 // Read item with the value 'Walking' in 'todo' index in the 'todos' store
-await scStorage.read("todos", {index: "todo", nameValue: "Walking", database: "TodoDatabase"})
+await storageUtility.read("todos", {index: "todo", nameValue: "Walking", database: "TodoDatabase"})
 
 // Read item with id 5 in the 'todos' store
-await scStorage.read("todos", {id: 5, database: "TodoDatabase"})
+await storageUtility.read("todos", {id: 5, database: "TodoDatabase"})
 ```
 
 Options available:
@@ -254,15 +254,15 @@ Options available:
 
 ```javascript
 const data = {todo: "Walking"}
-await scStorage.write("todos", data, options)
+await storageUtility.write("todos", data, options)
 
 // Write
 const data = {todo: "Walking"}
-scStorage.write("todos", data, {expires: new Date(new Date().getTime()+100000), database: "TodoDatabase"})
+storageUtility.write("todos", data, {expires: new Date(new Date().getTime()+100000), database: "TodoDatabase"})
 
 // Update
 const data = {id: 5, todo: "Walking"} // Note: You have to add id in data
-scStorage.write("todos", data, {expires: new Date(new Date().getTime()+100000), database: "TodoDatabase", update: true})
+storageUtility.write("todos", data, {expires: new Date(new Date().getTime()+100000), database: "TodoDatabase", update: true})
 ```
 
 Note: If you run the **write** method and the database and store don't exist, they will be created automatically. You can also use the indexes option to add custom indexes.  However, please note that adding indexes is only applicable when creating a new store.
@@ -283,16 +283,16 @@ Options available:
 #### Delete
 
 ```javascript
-await scStorage.delete("key", options)
+await storageUtility.delete("key", options)
 
 // Delete data with id 5
-await scStorage.delete(5, {storeName: "todos", database: "TodoDatabase"})
+await storageUtility.delete(5, {storeName: "todos", database: "TodoDatabase"})
 
 // Delete store
-await scStorage.delete("todos", {database: "TodoDatabase", type: "store"})
+await storageUtility.delete("todos", {database: "TodoDatabase", type: "store"})
 
 // Delete database
-await scStorage.delete("TodoDatabase", {type: "database"})
+await storageUtility.delete("TodoDatabase", {type: "database"})
 ```
 
 Options available:
@@ -307,17 +307,17 @@ Options available:
 #### Has
 
 ```javascript
-const scStorage = new ScStorage({STORAGE_TYPE: StorageType.INDEXEDDB})
-await scStorage.has("storeName", options)
+const storageUtility = new StorageUtility({STORAGE_TYPE: StorageType.INDEXEDDB})
+await storageUtility.has("storeName", options)
 
 // Has items in the 'todos' store
-await scStorage.has("todos", {database: "TodoDatabase"})
+await storageUtility.has("todos", {database: "TodoDatabase"})
 
 // Has items with the value 'Walking' in the 'todos' store
-await scStorage.has("todos", {index: "todo", nameValue: "Walking", database: "TodoDatabase"})
+await storageUtility.has("todos", {index: "todo", nameValue: "Walking", database: "TodoDatabase"})
 
 // Has item with id 5 in the 'todos' store
-await scStorage.has("todos", {nameValue: 5, database: "TodoDatabase"})
+await storageUtility.has("todos", {nameValue: 5, database: "TodoDatabase"})
 ```
 
 Options available:
